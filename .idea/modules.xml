@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/clean_pexeso.iml" filepath="$PROJECT_DIR$/.idea/modules/clean_pexeso.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android/clean_pexeso.android.iml" filepath="$PROJECT_DIR$/.idea/modules/android/clean_pexeso.android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/core/clean_pexeso.core.iml" filepath="$PROJECT_DIR$/.idea/modules/core/clean_pexeso.core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/desktop/clean_pexeso.desktop.iml" filepath="$PROJECT_DIR$/.idea/modules/desktop/clean_pexeso.desktop.iml" />
+    </modules>
+  </component>
+</project>
