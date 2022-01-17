@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -17,18 +18,16 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class MyGdxGame extends ApplicationAdapter {
-	SpriteBatch batch;
-//	Sprite sprite;
-	OrthographicCamera camera;
-	Texture texture;
-	Texture textureB;
-	private Array<Sprite> sprites;
-//	TextureRegion regionB;
-	enum SHAPE{
-		TRIANGLE, SQUARE, CIRCLE
-	};
+	final Color[] CARD_COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA};
+	final int GRID_WIDTH = 5;
+	final int GRID_HEIGHT = 8;
+	final float SPACING = 0.88f;
 
-	
+	SpriteBatch batch;
+	OrthographicCamera camera;
+	Texture texture_off;
+	private Array<Card> cards;
+
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
@@ -37,38 +36,57 @@ public class MyGdxGame extends ApplicationAdapter {
 		Vector2 dimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		camera.setToOrtho(false, dimensions.x, dimensions.y);
 
-		int gridY = 7;
-		int gridX = 4;
-
-		float sy = (dimensions.y*0.88f)/gridY;
-		float sx = (dimensions.x*0.88f)/gridX;
+		float sy = (dimensions.y*SPACING)/GRID_HEIGHT;
+		float sx = (dimensions.x*SPACING)/GRID_WIDTH;
 		int size = (int)Math.floor(sy < sx ? sy : sx);
 
-		int marginX = (int)Math.floor((dimensions.x-size*gridX)/(gridX+2));
-		int marginY = (int)Math.floor((dimensions.y-size*gridY)/(gridY+2));
+		int marginX = (int)Math.floor((dimensions.x-size*GRID_WIDTH)/(GRID_WIDTH+2));
+		int marginY = (int)Math.floor((dimensions.y-size*GRID_HEIGHT)/(GRID_HEIGHT+2));
 
-		int offsetX = (int)Math.floor( (dimensions.x - (size*gridX+marginX*(gridX-1)))/2 );
-		int offsetY = (int)Math.floor( (dimensions.y - (size*gridY+marginY*(gridY-1)))/2 );
+		int offsetX = (int)Math.floor( (dimensions.x - (size*GRID_WIDTH+marginX*(GRID_WIDTH-1)))/2 );
+		int offsetY = (int)Math.floor( (dimensions.y - (size*GRID_HEIGHT+marginY*(GRID_HEIGHT-1)))/2 );
 
-		texture = getTexture(size);
-//		TextureRegion region = new TextureRegion(texture,0,0,100,100);
-//		texture.dispose();
-//		sprite = new Sprite(region);
-//		sprite = new Sprite(texture);
+		texture_off = getTexture(size);
 
-		textureB = getTextureB(size);
-//		regionB = new TextureRegion(textureB,0,0,100,100);
+		cards = new Array<>();
 
-//		sprite.setPosition(10,10);
+		Array<CardTemplate> templatesAll = new Array<>();
 
-		sprites = new Array<>();
-
-		for(int y = 0; y < gridY; y++)
-		for(int x = 0; x < gridX; x++){
-			Sprite sprite = new Sprite(texture);
-			sprite.setPosition(offsetX + x*(size + marginX), offsetY + y*(size + marginY));
-			sprites.add(sprite);
+		for(int i = 0; i < CARD_COLORS.length; i++){
+			templatesAll.add(
+					new CardTemplate(SHAPE.CIRCLE, CARD_COLORS[i], true),
+					new CardTemplate(SHAPE.TRIANGLE, CARD_COLORS[i], true),
+					new CardTemplate(SHAPE.SQUARE, CARD_COLORS[i], true)
+			);
+			templatesAll.add(
+					new CardTemplate(SHAPE.CIRCLE, CARD_COLORS[i], false),
+					new CardTemplate(SHAPE.TRIANGLE, CARD_COLORS[i], false),
+					new CardTemplate(SHAPE.SQUARE, CARD_COLORS[i], false)
+			);
 		}
+
+		Array<CardTemplate> templatesPairs = new Array<>();
+
+		for(int i = 0; i < (GRID_WIDTH*GRID_HEIGHT)/2; i++){
+			CardTemplate template = templatesAll.removeIndex(MathUtils.random(0,templatesAll.size-1));
+			templatesPairs.add(template, template);
+		}
+
+		for(int y = 0; y < GRID_HEIGHT; y++)
+		for(int x = 0; x < GRID_WIDTH; x++){
+			CardTemplate template = templatesPairs.removeIndex(MathUtils.random(0,templatesPairs.size-1));
+
+			Texture texture_on = getCardTexture(size, template);
+
+			Card c = new Card(
+					offsetX + x*(size + marginX),
+					offsetY + y*(size + marginY),
+					texture_on,
+					texture_off
+					);
+			cards.add(c);
+		}
+
 	}
 
 	@Override
@@ -76,11 +94,10 @@ public class MyGdxGame extends ApplicationAdapter {
 		if(Gdx.input.justTouched()) {
 			Vector3 touchPoint = new Vector3();
 			camera.unproject(touchPoint.set(Gdx.input.getX(),Gdx.input.getY(),0));
-			for(Sprite s: sprites) {
-				if (s.getBoundingRectangle().contains(touchPoint.x, touchPoint.y)) {
-					s.setRegion(textureB);
-				}
-			}
+
+			for(Card c: cards)
+				if(c.clicked(new Vector2(touchPoint.x, touchPoint.y)))
+					break;
 		}
 
 		camera.update();
@@ -88,16 +105,17 @@ public class MyGdxGame extends ApplicationAdapter {
 
 		ScreenUtils.clear(0, 0, 0, 1);
 		batch.begin();
-		for(Sprite s: sprites)
-			batch.draw(s,s.getX(), s.getY());
+		for(Card c: cards)
+			c.draw(batch);
 		batch.end();
 	}
 	
 	@Override
 	public void dispose () {
 		batch.dispose();
-		texture.dispose();
-		textureB.dispose();
+		texture_off.dispose();
+		for(Card c: cards)
+			c.dispose();
 	}
 
 	private Texture getTexture(int s){
@@ -109,13 +127,9 @@ public class MyGdxGame extends ApplicationAdapter {
 		return t;
 	}
 
-	private Texture getTextureB(int s){
+	private Texture getCardTexture(int s, CardTemplate _t){
 		Pixmap pixmap = new Pixmap(s, s, Pixmap.Format.RGBA8888);
-//		pixmap.setColor(Color.WHITE);
-//		pixmap.drawRectangle(0,0,s,s);
-//		pixmap.setColor(Color.RED);
-//		pixmap.fillTriangle(s/10,s/10, s - s/10,s/10,s/2,s-s/10);
-		drawPuzzle(pixmap, s, SHAPE.TRIANGLE, Color.CYAN, false);
+		drawPuzzle(pixmap, s, _t.shape, _t.color, _t.filled);
 		Texture t = new Texture(pixmap);
 		pixmap.dispose();
 		return t;
