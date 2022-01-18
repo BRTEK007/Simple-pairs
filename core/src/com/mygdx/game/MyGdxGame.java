@@ -24,10 +24,10 @@ import com.badlogic.gdx.utils.Timer;
 public class MyGdxGame extends Game {
 	private GameScreen gameScreen;
 	private MenuScreen menuScreen;
+	private ResultsScreen resultsScreen;
 
 	@Override
 	public void create () {
-//		gameScreen = new GameScreen(this);
 		menuScreen = new MenuScreen(this);
 		setScreen(menuScreen);
 	}
@@ -42,11 +42,25 @@ public class MyGdxGame extends Game {
 		getScreen().dispose();
 	}
 
-	public void changeScreen(){
+
+	public void startGame(){//parameters size, etc...
 		getScreen().dispose();
 		gameScreen = new GameScreen(this);
 		setScreen(gameScreen);
 	}
+
+	public void showResults(){
+		getScreen().dispose();
+		resultsScreen = new ResultsScreen(this);
+		setScreen(resultsScreen);
+	}
+
+	public void returnToMenu(){
+		getScreen().dispose();
+		menuScreen = new MenuScreen(this);
+		setScreen(menuScreen);
+	}
+
 
 
 }

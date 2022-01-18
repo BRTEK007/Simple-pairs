@@ -6,11 +6,14 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
@@ -20,8 +23,8 @@ public class GameScreen implements Screen {
     private MyGdxGame parent;
 
     final Color[] CARD_COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA};
-	final int GRID_WIDTH = 5;
-	final int GRID_HEIGHT = 8;
+	final int GRID_WIDTH = 1;
+	final int GRID_HEIGHT = 4;
 	final float SPACING = 0.88f;
 	final float UNCOVER_DELAY = 0.5f;
 
@@ -98,6 +101,7 @@ public class GameScreen implements Screen {
 		card1 = null;
 		card2 = null;
 		canClick = true;
+
     }
 
 
@@ -128,6 +132,9 @@ public class GameScreen implements Screen {
 									cards.removeValue(card2, true);
 									card1.dispose();
 									card2.dispose();
+									if(cards.size == 0){//WIN GAME
+										parent.showResults();
+									}
 								}else{
 									card1.hide();
 									card2.hide();

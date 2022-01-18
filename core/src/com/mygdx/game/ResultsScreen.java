@@ -11,23 +11,29 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
-public class MenuScreen implements Screen {
+import sun.font.TextLabel;
+
+public class ResultsScreen implements Screen {
 
     private MyGdxGame parent;
+
     private Stage stage;
     private Table table;
     private Texture texture1;
     private BitmapFont buttonFont;
 
-    public MenuScreen(MyGdxGame _p) {//TODO clickable buttons + styles
+    public ResultsScreen(MyGdxGame _p){
         parent = _p;
+
         stage = new Stage(new ScreenViewport());
         Gdx.input.setInputProcessor(stage);
 
@@ -54,38 +60,34 @@ public class MenuScreen implements Screen {
         parameter.color = Color.BLACK;
         buttonFont = generator.generateFont(parameter);
 //        buttonFont.setColor(Color.BLACK);
-        generator.dispose();
+//        generator.dispose();
 
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
         textButtonStyle.up = new TextureRegionDrawable(region);
         textButtonStyle.down = new TextureRegionDrawable(region);
         textButtonStyle.font = buttonFont;
 
-        TextButton button1 = new TextButton("SOLO", textButtonStyle);
-        TextButton button2 = new TextButton("BOT", textButtonStyle);
-        TextButton button3 = new TextButton("7x4", textButtonStyle);
-        TextButton button4 = new TextButton("8x5", textButtonStyle);
-        TextButton button5 = new TextButton("PLAY", textButtonStyle);
+        TextButton button = new TextButton("OK", textButtonStyle);
 
-        button5.addListener(new ChangeListener() {
+        button.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                parent.startGame();
+                parent.returnToMenu();
             }
         });
 
-        table.add(button1).pad(padding);
-        table.row();
-        table.add(button2).pad(padding);
-        table.row();
-        table.add(button3).pad(padding);
-        table.row();
-        table.add(button4).pad(padding);
-        table.row();
-        table.add(button5).pad(padding);
+        parameter.color = Color.WHITE;
+        buttonFont = generator.generateFont(parameter);
 
-        button1.setColor(Color.RED);
-        button3.setColor(Color.RED);
+        Label.LabelStyle labelStyle = new Label.LabelStyle(buttonFont, Color.WHITE);
+        Label label = new Label("2:34", labelStyle);
+
+        table.add(label).pad(padding);
+        table.row();
+        table.add(button).pad(padding);
+
+        generator.dispose();
+//        label.setText("shithole");
     }
 
     @Override
