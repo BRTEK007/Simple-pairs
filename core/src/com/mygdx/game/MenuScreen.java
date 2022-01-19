@@ -11,6 +11,8 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Button;
+import com.badlogic.gdx.scenes.scene2d.ui.HorizontalGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -23,11 +25,14 @@ public class MenuScreen implements Screen {
     private MyGdxGame parent;
     private Stage stage;
     private Table table;
-    private Texture texture1;
+    private Texture playTexture, choiceTexture;
     private BitmapFont buttonFont;
 
     public MenuScreen(MyGdxGame _p) {//TODO clickable buttons + styles
         parent = _p;
+
+        Vector2 dimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
         stage = new Stage(new ScreenViewport());
         Gdx.input.setInputProcessor(stage);
 
@@ -35,62 +40,94 @@ public class MenuScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        Vector2 dimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        int sizeX = Math.round(dimensions.x * 0.88f);
-        int sizeY = Math.round(0.88f * dimensions.y / 6);
-        int padding = Math.round((dimensions.y - sizeY*5)/12);
+        /////////////////////////////////////////////
 
-        Pixmap pixmap = new Pixmap(sizeX, sizeY, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-        pixmap.fillRectangle(0, 0, sizeX, sizeY);
-        texture1 = new Texture(pixmap);
-        pixmap.dispose();
+        int playRadius = Math.round(dimensions.x/4);
+        playTexture = getPlayTexture(playRadius);
 
-        TextureRegion region = new TextureRegion(texture1);
+        TextureRegion playRegion = new TextureRegion(playTexture);
+        Button.ButtonStyle playButtonStyle = new Button.ButtonStyle();
+
+        playButtonStyle.up = new TextureRegionDrawable(playRegion);
+        playButtonStyle.down = new TextureRegionDrawable(playRegion);
+
+        Button buttonPlay = new Button(playButtonStyle);
+
+        /////////////////////////////////////////////
+
+        int buttonWidth = Math.round(3*dimensions.x/10);
+        int buttonHeight = Math.round(buttonWidth/1.68f);
+        choiceTexture = getChoiceTexture(buttonWidth, buttonHeight);
+        TextureRegion choiceRegion = new TextureRegion(choiceTexture);
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parameter.size = Math.round(sizeY*0.88f); // font size
+        parameter.size = Math.round(buttonHeight*0.5f); // font size
         parameter.color = Color.BLACK;
+//        parameter.borderWidth = 2;
+//        parameter.spaceX = 2;
         buttonFont = generator.generateFont(parameter);
-//        buttonFont.setColor(Color.BLACK);
         generator.dispose();
 
-        TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
-        textButtonStyle.up = new TextureRegionDrawable(region);
-        textButtonStyle.down = new TextureRegionDrawable(region);
-        textButtonStyle.font = buttonFont;
+        TextButton.TextButtonStyle choiceButtonStyle = new TextButton.TextButtonStyle();
+        choiceButtonStyle.up = new TextureRegionDrawable(choiceRegion);
+        choiceButtonStyle.font = buttonFont;
 
-        TextButton button1 = new TextButton("SOLO", textButtonStyle);
-        TextButton button2 = new TextButton("BOT", textButtonStyle);
-        TextButton button3 = new TextButton("7x4", textButtonStyle);
-        TextButton button4 = new TextButton("8x5", textButtonStyle);
-        TextButton button5 = new TextButton("PLAY", textButtonStyle);
+        MyButton buttonMode = new MyButton("SOLO", choiceButtonStyle);
+        MyButton buttonSize = new MyButton("7x4", choiceButtonStyle);
 
-        button5.addListener(new ChangeListener() {
+//      buttonSolo.setChecked(true);
+//      button74.setChecked(true);
+
+        /////////////////////////////////////////////
+
+        buttonPlay.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 parent.startGame();
             }
         });
 
-        table.add(button1).pad(padding);
-        table.row();
-        table.add(button2).pad(padding);
-        table.row();
-        table.add(button3).pad(padding);
-        table.row();
-        table.add(button4).pad(padding);
-        table.row();
-        table.add(button5).pad(padding);
+        HorizontalGroup group1 = new HorizontalGroup();
+        group1.space(2*dimensions.x/10);
+        group1.addActor(buttonMode);
+        group1.addActor(buttonSize);
 
-        button1.setColor(Color.RED);
-        button3.setColor(Color.RED);
+        table.bottom();
+        table.add(buttonPlay);
+        table.row();
+        int padToCenter = Math.round((dimensions.y/2-playRadius) - (buttonHeight+dimensions.x/10));
+        table.add(group1).padTop(padToCenter).padBottom(dimensions.x/10);
     }
 
     @Override
     public void show() {
 
+    }
+
+    private Texture getPlayTexture(int _radius){
+        int triOffset = _radius/4;
+        Pixmap pixmap = new Pixmap(_radius*2, _radius*2, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fillCircle(_radius,_radius,_radius);
+        pixmap.setColor(Color.BLACK);
+        pixmap.fillTriangle(triOffset + _radius/2,_radius/2,
+                triOffset + _radius + _radius/4,_radius,
+                triOffset + _radius/2, _radius*2-_radius/2);
+        Texture t = new Texture(pixmap);
+        pixmap.dispose();
+        return t;
+    }
+
+    private Texture getChoiceTexture(int _sx, int _sy){
+        Pixmap pixmap2 = new Pixmap(_sx, _sy, Pixmap.Format.RGBA8888);
+        pixmap2.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
+        pixmap2.fillRectangle(0, 0, _sx, _sy);
+//        pixmap2.setColor(Color.BLACK);
+//        pixmap2.fillRectangle(_sx/20, _sx/20, _sx - 2*_sx/20, _sy-2*_sx/20);
+        Texture t = new Texture(pixmap2);
+        pixmap2.dispose();
+        return t;
     }
 
     @Override
@@ -123,7 +160,8 @@ public class MenuScreen implements Screen {
 
     @Override
     public void dispose() {
-        texture1.dispose();
+        playTexture.dispose();
+        choiceTexture.dispose();
         buttonFont.dispose();
         stage.dispose();
     }
