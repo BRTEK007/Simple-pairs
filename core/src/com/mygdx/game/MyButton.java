@@ -10,9 +10,15 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 public class MyButton extends TextButton {//TODO change values on click, tint on down
 
     private boolean hover;
+    public int state;
+    private String[] options;
 
-    public MyButton(String text, TextButtonStyle skin) {
-        super(text, skin);
+    public MyButton(String[] _options, TextButtonStyle skin) {
+        super(_options[0], skin);
+
+        state = 0;
+        options = _options;
+
         addListener(new InputListener() {
 //            @Override
 //            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
@@ -26,7 +32,9 @@ public class MyButton extends TextButton {//TODO change values on click, tint on
 
             @Override
             public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
-                hover = true;
+//                hover = true;
+                state = state+1 >= options.length ? 0 : state+1;
+                setText(options[state]);
                 return true;
             }
 

@@ -1,5 +1,6 @@
 package com.mygdx.game;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
@@ -23,8 +24,8 @@ public class GameScreen implements Screen {
     private MyGdxGame parent;
 
     final Color[] CARD_COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA};
-	final int GRID_WIDTH = 1;
-	final int GRID_HEIGHT = 4;
+	final int GRID_WIDTH = 3;
+	final int GRID_HEIGHT = 6;
 	final float SPACING = 0.88f;
 	final float UNCOVER_DELAY = 0.5f;
 
@@ -34,6 +35,9 @@ public class GameScreen implements Screen {
 	private Array<Card> cards;
 	private Card card1, card2;
 	private boolean canClick;
+
+	private GameObserver gameObserver;
+	private Bot bot;
 
     public GameScreen(MyGdxGame _p){
         parent = _p;
@@ -101,7 +105,8 @@ public class GameScreen implements Screen {
 		card1 = null;
 		card2 = null;
 		canClick = true;
-
+		gameObserver = new GameObserver();
+		bot = new Bot(cards.size, 1000);
     }
 
 
@@ -111,7 +116,9 @@ public class GameScreen implements Screen {
     }
 
     @Override
-    public void render(float delta) {
+    public void render(float _delta) {
+
+    	gameObserver.update(_delta);
 
         if(canClick && Gdx.input.justTouched()) {
 			Vector3 touchPoint = new Vector3();
@@ -127,13 +134,13 @@ public class GameScreen implements Screen {
 						Timer.schedule(new Timer.Task(){
 							@Override
 							public void run() {
-								if(card1.id == card2.id){//collecting cards
+								if(card1.key == card2.key){//collecting cards
 									cards.removeValue(card1, true);
 									cards.removeValue(card2, true);
 									card1.dispose();
 									card2.dispose();
 									if(cards.size == 0){//WIN GAME
-										parent.showResults();
+										parent.showResults(gameObserver.getTime(), gameObserver.getMistakes());
 									}
 								}else{
 									card1.hide();

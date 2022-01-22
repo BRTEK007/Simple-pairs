@@ -73,8 +73,11 @@ public class MenuScreen implements Screen {
         choiceButtonStyle.up = new TextureRegionDrawable(choiceRegion);
         choiceButtonStyle.font = buttonFont;
 
-        MyButton buttonMode = new MyButton("SOLO", choiceButtonStyle);
-        MyButton buttonSize = new MyButton("7x4", choiceButtonStyle);
+        String[] options1 = {"SOLO", "BOT I", "BOT II"};
+        String[] options2 = {"7x4", "8x5", "6x3"};
+
+        MyButton buttonMode = new MyButton(options1, choiceButtonStyle);
+        MyButton buttonSize = new MyButton(options2, choiceButtonStyle);
 
 //      buttonSolo.setChecked(true);
 //      button74.setChecked(true);

@@ -31,7 +31,7 @@ public class ResultsScreen implements Screen {
     private Texture texture1;
     private BitmapFont buttonFont;
 
-    public ResultsScreen(MyGdxGame _p){
+    public ResultsScreen(MyGdxGame _p, int _time, int _mistakes){
         parent = _p;
 
         stage = new Stage(new ScreenViewport());
@@ -56,7 +56,7 @@ public class ResultsScreen implements Screen {
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parameter.size = Math.round(sizeY*0.88f); // font size
+        parameter.size = Math.round(sizeY*0.66f); // font size
         parameter.color = Color.BLACK;
         buttonFont = generator.generateFont(parameter);
 //        buttonFont.setColor(Color.BLACK);
@@ -77,17 +77,18 @@ public class ResultsScreen implements Screen {
         });
 
         parameter.color = Color.WHITE;
+        parameter.size = Math.round(sizeY*0.33f);
         buttonFont = generator.generateFont(parameter);
 
         Label.LabelStyle labelStyle = new Label.LabelStyle(buttonFont, Color.WHITE);
-        Label label = new Label("2:34", labelStyle);
+        Label label = new Label("time: " + _time + '\n' + "mistakes: " + _mistakes, labelStyle);
 
+        table.bottom();
         table.add(label).pad(padding);
         table.row();
         table.add(button).pad(padding);
 
         generator.dispose();
-//        label.setText("shithole");
     }
 
     @Override

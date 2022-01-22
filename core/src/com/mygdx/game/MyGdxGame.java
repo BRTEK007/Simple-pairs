@@ -49,9 +49,9 @@ public class MyGdxGame extends Game {
 		setScreen(gameScreen);
 	}
 
-	public void showResults(){
+	public void showResults(int _time, int _mistakes){
 		getScreen().dispose();
-		resultsScreen = new ResultsScreen(this);
+		resultsScreen = new ResultsScreen(this, _time, _mistakes);
 		setScreen(resultsScreen);
 	}
 
