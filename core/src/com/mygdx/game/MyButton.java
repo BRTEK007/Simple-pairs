@@ -12,27 +12,19 @@ public class MyButton extends TextButton {//TODO change values on click, tint on
     private boolean hover;
     public int state;
     private String[] options;
+    private Color[] colors;
 
-    public MyButton(String[] _options, TextButtonStyle skin) {
+    public MyButton(String[] _options, Color[] _colors, TextButtonStyle skin) {
         super(_options[0], skin);
 
         state = 0;
         options = _options;
+        colors = _colors;
 
         addListener(new InputListener() {
-//            @Override
-//            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-//                hover = true;
-//            }
-//
-//            @Override
-//            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-//                hover = false;
-//            }
 
             @Override
             public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
-//                hover = true;
                 state = state+1 >= options.length ? 0 : state+1;
                 setText(options[state]);
                 return true;
@@ -43,10 +35,11 @@ public class MyButton extends TextButton {//TODO change values on click, tint on
 
     @Override
     public Color getColor() {
-        if (!hover)
-            return super.getColor();
-        else
-            return Color.RED;
+//        if (!hover)
+//            return super.getColor();
+//        else
+//            return Color.RED;
+        return colors[state];
     }
 
 }

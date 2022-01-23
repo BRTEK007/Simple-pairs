@@ -1,5 +1,6 @@
 package com.mygdx.game;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
@@ -73,11 +74,14 @@ public class MenuScreen implements Screen {
         choiceButtonStyle.up = new TextureRegionDrawable(choiceRegion);
         choiceButtonStyle.font = buttonFont;
 
-        String[] options1 = {"SOLO", "BOT I", "BOT II"};
+        String[] options1 = {"BOT II", "BOT III","SOLO", "BOT I",};
         String[] options2 = {"7x4", "8x5", "6x3"};
 
-        MyButton buttonMode = new MyButton(options1, choiceButtonStyle);
-        MyButton buttonSize = new MyButton(options2, choiceButtonStyle);
+        Color[] colors1 = {Color.YELLOW, Color.RED, Color.WHITE, Color.GREEN};
+        Color[] colors2 = {Color.YELLOW, Color.RED, Color.GREEN};
+
+        final MyButton buttonMode = new MyButton(options1, colors1, choiceButtonStyle);
+        final MyButton buttonSize = new MyButton(options2, colors2, choiceButtonStyle);
 
 //      buttonSolo.setChecked(true);
 //      button74.setChecked(true);
@@ -87,7 +91,10 @@ public class MenuScreen implements Screen {
         buttonPlay.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
-                parent.startGame();
+                GAMEMODE gamemodes[] = {GAMEMODE.BOT2, GAMEMODE.BOT3, GAMEMODE.SOLO, GAMEMODE.BOT1};
+                GRIDSIZE sizes[] = {GRIDSIZE.MEDIUM, GRIDSIZE.BIG, GRIDSIZE.SMALL};
+
+                parent.startGame(gamemodes[buttonMode.state], sizes[buttonSize.state]);
             }
         });
 

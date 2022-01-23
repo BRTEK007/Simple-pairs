@@ -4,11 +4,11 @@ import com.badlogic.gdx.utils.Array;
 
 import java.util.Iterator;
 
-class Pair{
+class MyPair {
     public int x;
     public int y;
 
-    public Pair(int _x, int _y){
+    public MyPair(int _x, int _y){
         x = _x;
         y = _y;
     }
@@ -23,8 +23,8 @@ class Pair{
 public class Bot {
 
     private Array<Integer> unknownIds;//ids of not known cards
-    private Array<Pair> knownCards;//known cards, [id, key]
-    private Pair knownPair;//matched pair, [id1, id2] -> [-1, id2] -> [-1, -1]
+    private Array<MyPair> knownCards;//known cards, [id, key]
+    private MyPair knownPair;//matched pair, [id1, id2] -> [-1, id2] -> [-1, -1]
 
     private int memorySize;//how many cards can be held in known
 
@@ -37,7 +37,7 @@ public class Bot {
 
         knownCards = new Array<>();
 
-        knownPair = new Pair(-1,-1);
+        knownPair = new MyPair(-1,-1);
 
         memorySize = _memorySize;
     }
@@ -47,10 +47,10 @@ public class Bot {
 
         unknownIds.removeValue(_id, true);
 
-        knownCards.add(new Pair(_id, _key));
+        knownCards.add(new MyPair(_id, _key));
 
         if(knownCards.size > memorySize){//time to forget...
-            Pair r = knownCards.random();
+            MyPair r = knownCards.random();
             unknownIds.add(r.x);//push its id back to unknown
             knownCards.removeValue(r, true);
         }
@@ -75,7 +75,7 @@ public class Bot {
         return move;
     }
 
-    private void forgetCard(int _id){//card was picked by Bot or by Player
+    public void forgetCard(int _id){//card was picked by Bot or by Player
         unknownIds.removeValue(_id, true);
 
         if(knownPair.x == _id || knownPair.y == _id) {
@@ -83,8 +83,8 @@ public class Bot {
             knownPair.y = -1;
         }
 
-        for (Iterator<Pair> iter = knownCards.iterator(); iter.hasNext();) {
-            Pair p = iter.next();
+        for (Iterator<MyPair> iter = knownCards.iterator(); iter.hasNext();) {
+            MyPair p = iter.next();
             if(p.x == _id){
                 iter.remove();
                 break;
@@ -94,11 +94,12 @@ public class Bot {
     }
 
     private void searchForPair(){//look for matching cards in known cards
+
         for(int i = 0; i < knownCards.size; i++){
-            Pair card1 = knownCards.items[i];
+            MyPair card1 = knownCards.get(i);
 
             for(int j = i+1; j < knownCards.size; j++){
-                Pair card2 = knownCards.items[j];
+                MyPair card2 = knownCards.get(j);
 
                 if(card1.y == card2.y){//cards have same key
                     knownPair.set(card1.x, card2.x);//set known pair to their indexes
