@@ -15,6 +15,11 @@ public class Card {
     public int id;
     public boolean hidden;
 
+    final float rotationSpeed = (float) Math.PI*3;
+    private float angle;
+    private boolean flipped;
+    private boolean finished;
+
     public Card(int _x, int _y, int _id, int _key, Texture _on, Texture _off){
         texture_on = _on;
         texture_off = _off;//TODO fix to _off
@@ -27,6 +32,10 @@ public class Card {
         key = _key;
         id = _id;
         hidden = true;
+
+        angle = 0;
+        flipped = false;
+        finished = true;
     }
 
     public boolean clicked(Vector2 _tp){
@@ -37,23 +46,51 @@ public class Card {
     }
 
 
-    public void draw(SpriteBatch _b){
+    public void draw(SpriteBatch _b, float _delta){
 //        _b.enableBlending();
 //        _b.draw(sprite, sprite.getX(), sprite.getY());
+        if(!finished) {
+            if(!hidden) {//revealing
+                angle += rotationSpeed * _delta;
+                if (!flipped && angle >= Math.PI / 2) {
+                    flipped = true;
+                    sprite.setRegion(texture_on);
+                } else if (angle >= Math.PI) {
+                    finished = true;
+                    angle = (float) Math.PI;
+                }
+            }else{
+                angle -= rotationSpeed * _delta;
+                if (!flipped && angle <= Math.PI / 2) {
+                    flipped = true;
+                    sprite.setRegion(texture_off);
+                } else if (angle <= 0) {
+                    finished = true;
+                    angle = 0;
+                }
+            }
+            sprite.setScale((float)Math.cos(angle),1);
+        }
+
         sprite.draw(_b);
     }
 
     public void hide(){
         hidden = true;
-        sprite.setRegion(texture_off);
+//        sprite.setRegion(texture_off);
 //        sprite.setColor(0.5f,0.5f,0.5f,1f);
+        finished = false;
+        flipped = false;
     }
 
     public void reveal(){
         hidden = false;
-        sprite.setRegion(texture_on);
+//        sprite.setRegion(texture_on);
+        finished = false;
+        flipped = false;
 //        sprite.setColor(1,1,1,1f);
     }
+
 
     public void dispose(){
         texture_on.dispose();

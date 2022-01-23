@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -21,7 +22,7 @@ public class GameScreen implements Screen {
 
     final Color[] CARD_COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA};
 	final float SPACING = 0.88f;
-	final float UNCOVER_DELAY = 0.5f;
+	final float UNCOVER_DELAY = 1f;
 
 	SpriteBatch batch;
 	OrthographicCamera camera;
@@ -158,13 +159,17 @@ public class GameScreen implements Screen {
 			}
 		}
 
+//		if (Gdx.input.isKeyPressed(Input.Keys.BACK)){
+//			System.out.println("chuj");
+//		}
+
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 
 		ScreenUtils.clear(0, 0, 0, 1);
 		batch.begin();
 		for(Card c: cards)
-			c.draw(batch);
+			c.draw(batch, _delta);
 		batch.end();
     }
 
@@ -196,7 +201,7 @@ public class GameScreen implements Screen {
 			card1.hide();
 			card2.hide();
 			if(bot != null) {
-				if (playerTurn) {
+				if (playerTurn) {//switch to bot
 					playerTurn = false;
 					Timer.schedule(new Timer.Task() {
 						@Override
@@ -204,7 +209,7 @@ public class GameScreen implements Screen {
 							botMove();
 						}
 					}, UNCOVER_DELAY);
-				} else {
+				} else {//switch to player
 					playerTurn = true;
 					canClick = true;
 				}
@@ -284,7 +289,11 @@ public class GameScreen implements Screen {
     private Texture getTexture(int s){
 		Pixmap pixmap = new Pixmap(s, s, Pixmap.Format.RGBA8888);
 		pixmap.setColor(Color.WHITE);
-		pixmap.fillRectangle(0,0,s,s);
+//		pixmap.fillRectangle(0,0,s,s);
+		drawRoundedRectangle(pixmap, 0,0,s,s,s/10);
+//		pixmap.setColor(Color.BLACK);
+//		pixmap.fillRectangle(0,0,s,s);
+//		drawRoundedRectangle(pixmap, s/10,s/10,s - s/5,s - s/5,s/10, Color.BLACK);
 		Texture t = new Texture(pixmap);
 		pixmap.dispose();
 		return t;
@@ -292,10 +301,24 @@ public class GameScreen implements Screen {
 
 	private Texture getCardTexture(int s, CardTemplate _t){
 		Pixmap pixmap = new Pixmap(s, s, Pixmap.Format.RGBA8888);
+//		pixmap.setColor(0.2f,0.2f,0.2f,1);
+//		pixmap.setColor(Color.WHITE);
+//		pixmap.drawRectangle(0,0,s,s);
+//		pixmap.setColor(0.2f,0.2f,0.2f,1);
+//		pixmap.fillRectangle(0,0,s,s);
 		drawPuzzle(pixmap, s, _t.shape, _t.color, _t.filled);
 		Texture t = new Texture(pixmap);
 		pixmap.dispose();
 		return t;
+	}
+
+	private void drawRoundedRectangle(Pixmap pixmap, int x, int y, int width, int height, int radius) {
+		pixmap.fillRectangle(x, y + radius, width, height-2*radius);
+		pixmap.fillRectangle(x + radius, y, width - 2*radius, height);
+		pixmap.fillCircle(x+radius, y+radius, radius);
+		pixmap.fillCircle(x+radius, y+height-radius, radius);
+		pixmap.fillCircle(x+width-radius, y+radius, radius);
+		pixmap.fillCircle(x+width-radius, y+height-radius, radius);
 	}
 
 	private void drawPuzzle(Pixmap _pixmap, int _size, SHAPE _shape, Color _color, boolean _filled){
@@ -332,6 +355,7 @@ public class GameScreen implements Screen {
 					v2.add(new Vector2(_size/2, _size/2));
 					v3.add(new Vector2(_size/2, _size/2));
 					_pixmap.setColor(Color.BLACK);
+//					_pixmap.setColor(0.2f,0.2f,0.2f,1);
 					_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
 				}
 
@@ -340,6 +364,7 @@ public class GameScreen implements Screen {
 				_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/marginRate));
 				if(!_filled){
 					_pixmap.setColor(Color.BLACK);
+//					_pixmap.setColor(0.2f,0.2f,0.2f,1);
 					_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/marginRate - _size*strokeRate));
 				}
 				break;
@@ -353,6 +378,7 @@ public class GameScreen implements Screen {
 				);
 				if(!_filled){
 					_pixmap.setColor(Color.BLACK);
+//					_pixmap.setColor(0.2f,0.2f,0.2f,1);
 					_pixmap.fillRectangle(
 							Math.round(_size/marginRate + _size*strokeRate),
 							Math.round(_size/marginRate + _size*strokeRate),
