@@ -7,20 +7,32 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 public class GameScreen implements Screen {
 
     private MyGdxGame parent;
 
     final Color[] CARD_COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA};
+    final int UI_SIZE = 100;
 	final float SPACING = 0.88f;
 	final float UNCOVER_DELAY = 1f;
 
@@ -34,18 +46,27 @@ public class GameScreen implements Screen {
 	private GameObserver gameObserver;
 	private Bot bot;
 	private boolean playerTurn;
-	private int gridWidth = 3;
-	private int gridHeight = 6;
+
+	private int screenWidth;
+	private int screenHeight;
+	private int gridWidth;
+	private int gridHeight;
+
+	private Stage stage;
+	private Table table;
+	private BitmapFont font;
 
     public GameScreen(MyGdxGame _p, GAMEMODE _gamemode, GRIDSIZE _gridSize){
         parent = _p;
 
-
 		batch = new SpriteBatch();
 
 		camera = new OrthographicCamera();
-		Vector2 dimensions = new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-		camera.setToOrtho(false, dimensions.x, dimensions.y);
+
+		screenHeight = Gdx.graphics.getHeight();
+		screenWidth = Gdx.graphics.getWidth();
+
+		camera.setToOrtho(false, screenWidth, screenHeight);
 
 		switch (_gridSize){
 			case SMALL: gridHeight = 6; gridWidth = 3; break;
@@ -53,19 +74,55 @@ public class GameScreen implements Screen {
 			case BIG: gridHeight = 8; gridWidth = 5; break;
 		}
 
-		float sy = (dimensions.y*SPACING)/ gridHeight;
-		float sx = (dimensions.x*SPACING)/ gridWidth;
+		cards = new Array<>();
+		generateCards();
+
+		card1 = null;
+		card2 = null;
+		canClick = true;
+		gameObserver = new GameObserver();
+		switch (_gamemode){
+			case SOLO: bot = null; break;
+			case BOT1: bot = new Bot(cards.size, 3); break;
+			case BOT2: bot = new Bot(cards.size, 5); break;
+			case BOT3: bot = new Bot(cards.size, cards.size); break;
+		}
+		playerTurn = true;
+
+
+		stage = new Stage(new ScreenViewport());
+		Gdx.input.setInputProcessor(stage);
+
+		table = new Table();
+		table.setFillParent(true);
+		stage.addActor(table);
+
+		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
+		FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+		parameter.size = Math.round(UI_SIZE*0.66f); // font size
+		parameter.color = Color.WHITE;
+		font = generator.generateFont(parameter);
+        generator.dispose();
+
+		Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
+		Label label = new Label("0:00", labelStyle);
+
+		table.top();
+		table.add(label);
+    }
+
+    private void generateCards(){
+		float sy = ((screenHeight-UI_SIZE)*SPACING)/ gridHeight;
+		float sx = (screenWidth*SPACING)/ gridWidth;
 		int size = (int)Math.floor(sy < sx ? sy : sx);
 
-		int marginX = (int)Math.floor((dimensions.x-size* gridWidth)/(gridWidth +2));
-		int marginY = (int)Math.floor((dimensions.y-size* gridHeight)/(gridHeight +2));
+		int marginX = (int)Math.floor((screenWidth-size* gridWidth)/(gridWidth +2));
+		int marginY = (int)Math.floor(((screenHeight-UI_SIZE)-size* gridHeight)/(gridHeight +2));
 
-		int offsetX = (int)Math.floor( (dimensions.x - (size* gridWidth +marginX*(gridWidth -1)))/2 );
-		int offsetY = (int)Math.floor( (dimensions.y - (size* gridHeight +marginY*(gridHeight -1)))/2 );
+		int offsetX = (int)Math.floor( (screenWidth - (size* gridWidth +marginX*(gridWidth -1)))/2 );
+		int offsetY = (int)Math.floor( (screenHeight-UI_SIZE - (size* gridHeight +marginY*(gridHeight -1)))/2 );
 
 		texture_off = getTexture(size);
-
-		cards = new Array<>();
 
 		Array<CardTemplate> templatesAll = new Array<>();
 
@@ -91,34 +148,22 @@ public class GameScreen implements Screen {
 		}
 
 		for(int y = 0; y < gridHeight; y++)
-		for(int x = 0; x < gridWidth; x++){
-			CardTemplate template = templatesPairs.removeIndex(MathUtils.random(0,templatesPairs.size-1));
+			for(int x = 0; x < gridWidth; x++){
+				CardTemplate template = templatesPairs.removeIndex(MathUtils.random(0,templatesPairs.size-1));
 
-			Texture texture_on = getCardTexture(size, template);
+				Texture texture_on = getCardTexture(size, template);
 
-			Card c = new Card(
-					offsetX + x*(size + marginX),
-					offsetY + y*(size + marginY),
-					x + y* gridWidth,
-					template.id,
-					texture_on,
-					texture_off
-					);
-			cards.add(c);
-		}
-
-		card1 = null;
-		card2 = null;
-		canClick = true;
-		gameObserver = new GameObserver();
-		switch (_gamemode){
-			case SOLO: bot = null; break;
-			case BOT1: bot = new Bot(cards.size, 3); break;
-			case BOT2: bot = new Bot(cards.size, 5); break;
-			case BOT3: bot = new Bot(cards.size, cards.size); break;
-		}
-		playerTurn = true;
-    }
+				Card c = new Card(
+						offsetX + x*(size + marginX),
+						offsetY + y*(size + marginY),
+						x + y* gridWidth,
+						template.id,
+						texture_on,
+						texture_off
+				);
+				cards.add(c);
+			}
+	}
 
 
     @Override
@@ -159,10 +204,6 @@ public class GameScreen implements Screen {
 			}
 		}
 
-//		if (Gdx.input.isKeyPressed(Input.Keys.BACK)){
-//			System.out.println("chuj");
-//		}
-
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 
@@ -171,6 +212,9 @@ public class GameScreen implements Screen {
 		for(Card c: cards)
 			c.draw(batch, _delta);
 		batch.end();
+
+		stage.act(Math.min(_delta, 1 / 30f));
+		stage.draw();
     }
 
     private void evaluateMove(){
@@ -284,6 +328,7 @@ public class GameScreen implements Screen {
 		texture_off.dispose();
 		for(Card c: cards)
 			c.dispose();
+		font.dispose();
     }
 
     private Texture getTexture(int s){
