@@ -17,11 +17,14 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Button;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
@@ -32,7 +35,7 @@ public class GameScreen implements Screen {
     private MyGdxGame parent;
 
     final Color[] CARD_COLORS = {Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA};
-    final int UI_SIZE = 100;
+    final float UI_SCALE = 0.066f;
 	final float SPACING = 0.88f;
 	final float UNCOVER_DELAY = 1f;
 
@@ -55,6 +58,8 @@ public class GameScreen implements Screen {
 	private Stage stage;
 	private Table table;
 	private BitmapFont font;
+	private Texture pauseTexture;
+	private Label labelState;
 
     public GameScreen(MyGdxGame _p, GAMEMODE _gamemode, GRIDSIZE _gridSize){
         parent = _p;
@@ -97,30 +102,47 @@ public class GameScreen implements Screen {
 		table.setFillParent(true);
 		stage.addActor(table);
 
+		final int widgetSize = Math.round(screenHeight*UI_SCALE*0.84f);
+		final int widgetMargin = Math.round((screenHeight*UI_SCALE - widgetSize)/2);
+
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
 		FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
-		parameter.size = Math.round(UI_SIZE*0.66f); // font size
+		parameter.size = Math.round(widgetSize*0.84f); // font size
 		parameter.color = Color.WHITE;
 		font = generator.generateFont(parameter);
         generator.dispose();
 
-		Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
-		Label label = new Label("0:00", labelStyle);
+		Label.LabelStyle labelStateStyle = new Label.LabelStyle(font, Color.WHITE);
+		labelState = new Label("YOUR TURN", labelStateStyle);//YOUR TURN, BOT PLAYING
+		labelState.setColor(Color.GREEN);
+
+		pauseTexture = new Texture(Gdx.files.internal("pause.png"));
+		TextureRegion pauseRegion = new TextureRegion(pauseTexture);
+		Button.ButtonStyle pauseButtonStyle = new Button.ButtonStyle();
+
+		pauseButtonStyle.up = new TextureRegionDrawable(pauseRegion);
+		pauseButtonStyle.down = new TextureRegionDrawable(pauseRegion);
+
+		Button buttonPause = new Button(pauseButtonStyle);
 
 		table.top();
-		table.add(label);
+		table.left();
+		int padRight = Math.round(screenWidth - widgetSize - widgetMargin - widgetSize*6 - widgetMargin);
+		table.add(labelState).size(widgetSize*6, widgetSize).padLeft(widgetMargin).padTop(widgetMargin).padRight(padRight);
+		table.add(buttonPause).size(widgetSize, widgetSize).padTop(widgetMargin);
     }
 
     private void generateCards(){
-		float sy = ((screenHeight-UI_SIZE)*SPACING)/ gridHeight;
+    	float uiSize = screenHeight*UI_SCALE;
+		float sy = ((screenHeight-uiSize)*SPACING)/ gridHeight;
 		float sx = (screenWidth*SPACING)/ gridWidth;
 		int size = (int)Math.floor(sy < sx ? sy : sx);
 
 		int marginX = (int)Math.floor((screenWidth-size* gridWidth)/(gridWidth +2));
-		int marginY = (int)Math.floor(((screenHeight-UI_SIZE)-size* gridHeight)/(gridHeight +2));
+		int marginY = (int)Math.floor(((screenHeight-uiSize)-size* gridHeight)/(gridHeight +2));
 
 		int offsetX = (int)Math.floor( (screenWidth - (size* gridWidth +marginX*(gridWidth -1)))/2 );
-		int offsetY = (int)Math.floor( (screenHeight-UI_SIZE - (size* gridHeight +marginY*(gridHeight -1)))/2 );
+		int offsetY = (int)Math.floor( (screenHeight-uiSize - (size* gridHeight +marginY*(gridHeight -1)))/2 );
 
 		texture_off = getTexture(size);
 
@@ -247,6 +269,8 @@ public class GameScreen implements Screen {
 			if(bot != null) {
 				if (playerTurn) {//switch to bot
 					playerTurn = false;
+					labelState.setColor(Color.RED);
+					labelState.setText("BOT PLAYING");
 					Timer.schedule(new Timer.Task() {
 						@Override
 						public void run() {
@@ -256,6 +280,8 @@ public class GameScreen implements Screen {
 				} else {//switch to player
 					playerTurn = true;
 					canClick = true;
+					labelState.setColor(Color.GREEN);
+					labelState.setText("YOUR TURN");
 				}
 			}else{
 				canClick = true;
@@ -329,13 +355,14 @@ public class GameScreen implements Screen {
 		for(Card c: cards)
 			c.dispose();
 		font.dispose();
+		pauseTexture.dispose();
     }
 
     private Texture getTexture(int s){
 		Pixmap pixmap = new Pixmap(s, s, Pixmap.Format.RGBA8888);
 		pixmap.setColor(Color.WHITE);
 //		pixmap.fillRectangle(0,0,s,s);
-		drawRoundedRectangle(pixmap, 0,0,s,s,s/10);
+		myUtils.drawRoundedRectangle(pixmap, 0,0,s,s,s/10);
 //		pixmap.setColor(Color.BLACK);
 //		pixmap.fillRectangle(0,0,s,s);
 //		drawRoundedRectangle(pixmap, s/10,s/10,s - s/5,s - s/5,s/10, Color.BLACK);
@@ -355,15 +382,6 @@ public class GameScreen implements Screen {
 		Texture t = new Texture(pixmap);
 		pixmap.dispose();
 		return t;
-	}
-
-	private void drawRoundedRectangle(Pixmap pixmap, int x, int y, int width, int height, int radius) {
-		pixmap.fillRectangle(x, y + radius, width, height-2*radius);
-		pixmap.fillRectangle(x + radius, y, width - 2*radius, height);
-		pixmap.fillCircle(x+radius, y+radius, radius);
-		pixmap.fillCircle(x+radius, y+height-radius, radius);
-		pixmap.fillCircle(x+width-radius, y+radius, radius);
-		pixmap.fillCircle(x+width-radius, y+height-radius, radius);
 	}
 
 	private void drawPuzzle(Pixmap _pixmap, int _size, SHAPE _shape, Color _color, boolean _filled){

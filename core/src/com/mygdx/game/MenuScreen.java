@@ -130,13 +130,14 @@ public class MenuScreen implements Screen {
     }
 
     private Texture getChoiceTexture(int _sx, int _sy){
-        Pixmap pixmap2 = new Pixmap(_sx, _sy, Pixmap.Format.RGBA8888);
-        pixmap2.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-        pixmap2.fillRectangle(0, 0, _sx, _sy);
+        Pixmap pixmap = new Pixmap(_sx, _sy, Pixmap.Format.RGBA8888);
+        pixmap.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
+//        pixmap2.fillRectangle(0, 0, _sx, _sy);
+        myUtils.drawRoundedRectangle(pixmap, 0,0,_sx,_sy,_sx/10);
 //        pixmap2.setColor(Color.BLACK);
 //        pixmap2.fillRectangle(_sx/20, _sx/20, _sx - 2*_sx/20, _sy-2*_sx/20);
-        Texture t = new Texture(pixmap2);
-        pixmap2.dispose();
+        Texture t = new Texture(pixmap);
+        pixmap.dispose();
         return t;
     }
 
