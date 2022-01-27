@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 
 public class myUtils {
 
@@ -12,4 +13,5 @@ public class myUtils {
         pixmap.fillCircle(x+width-radius, y+radius, radius);
         pixmap.fillCircle(x+width-radius, y+height-radius, radius);
     }
+
 }

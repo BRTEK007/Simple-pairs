@@ -10,6 +10,7 @@ public class DesktopLauncher {
 		config.title = "clean pexeso";
 		config.height = 720;
 		config.width = 405;
+//		config.samples = 8;
 		config.forceExit = false;
 		new LwjglApplication(new MyGdxGame(), config);
 	}

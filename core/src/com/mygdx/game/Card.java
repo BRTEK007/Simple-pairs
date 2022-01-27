@@ -11,6 +11,7 @@ public class Card {
     private Sprite sprite;
     private Texture texture_on;
     private Texture texture_off;
+    private Color color;
     public int key;
     public int id;
     public boolean hidden;
@@ -20,10 +21,12 @@ public class Card {
     private boolean flipped;
     private boolean finished;
 
-    public Card(int _x, int _y, int _id, int _key, Texture _on, Texture _off){
+    public Card(int _x, int _y, int _id, int _key, Color _color, Texture _on, Texture _off){
         texture_on = _on;
         texture_off = _off;//TODO fix to _off
+        color = _color;
         sprite = new Sprite(this.texture_off);
+        sprite.setColor(Color.WHITE);
 //        sprite.setColor(Color.RED);
 //        sprite.rotate(45);
 //        sprite.setScale(0.5f);
@@ -55,6 +58,7 @@ public class Card {
                 if (!flipped && angle >= Math.PI / 2) {
                     flipped = true;
                     sprite.setRegion(texture_on);
+                    sprite.setColor(color);
                 } else if (angle >= Math.PI) {
                     finished = true;
                     angle = (float) Math.PI;
@@ -64,6 +68,7 @@ public class Card {
                 if (!flipped && angle <= Math.PI / 2) {
                     flipped = true;
                     sprite.setRegion(texture_off);
+                    sprite.setColor(Color.WHITE);
                 } else if (angle <= 0) {
                     finished = true;
                     angle = 0;
@@ -89,11 +94,6 @@ public class Card {
         finished = false;
         flipped = false;
 //        sprite.setColor(1,1,1,1f);
-    }
-
-
-    public void dispose(){
-        texture_on.dispose();
     }
 
 }

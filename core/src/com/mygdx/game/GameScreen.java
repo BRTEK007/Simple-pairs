@@ -1,9 +1,9 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -15,16 +15,11 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
@@ -38,10 +33,15 @@ public class GameScreen implements Screen {
     final float UI_SCALE = 0.066f;
 	final float SPACING = 0.88f;
 	final float UNCOVER_DELAY = 1f;
+	final float SHAPE_MARGIN_RATE = 8.8f;
+	final float SHAPE_STROKE_RATE = 0.1f;
 
 	SpriteBatch batch;
 	OrthographicCamera camera;
 	Texture texture_off;
+
+	private Texture shapesTextures[];
+
 	private Array<Card> cards;
 	private Card card1, card2;
 	private boolean canClick;
@@ -80,6 +80,7 @@ public class GameScreen implements Screen {
 		}
 
 		cards = new Array<>();
+		shapesTextures = new Texture[6];
 		generateCards();
 
 		card1 = null;
@@ -97,7 +98,10 @@ public class GameScreen implements Screen {
 
 		stage = new Stage(new ScreenViewport());
 		Gdx.input.setInputProcessor(stage);
+		generateUI();
+    }
 
+    private void generateUI(){
 		table = new Table();
 		table.setFillParent(true);
 		stage.addActor(table);
@@ -110,7 +114,7 @@ public class GameScreen implements Screen {
 		parameter.size = Math.round(widgetSize*0.84f); // font size
 		parameter.color = Color.WHITE;
 		font = generator.generateFont(parameter);
-        generator.dispose();
+		generator.dispose();
 
 		Label.LabelStyle labelStateStyle = new Label.LabelStyle(font, Color.WHITE);
 		labelState = new Label("YOUR TURN", labelStateStyle);//YOUR TURN, BOT PLAYING
@@ -130,9 +134,30 @@ public class GameScreen implements Screen {
 		int padRight = Math.round(screenWidth - widgetSize - widgetMargin - widgetSize*6 - widgetMargin);
 		table.add(labelState).size(widgetSize*6, widgetSize).padLeft(widgetMargin).padTop(widgetMargin).padRight(padRight);
 		table.add(buttonPause).size(widgetSize, widgetSize).padTop(widgetMargin);
-    }
+	}
 
-    private void generateCards(){
+	private void generateShapesTextures(int _size) {
+
+    	for(int i = 0; i < 6; i++){
+			Pixmap pixmap = new Pixmap(_size, _size, Pixmap.Format.RGBA8888);
+			pixmap.setColor(Color.WHITE);
+			switch (i){
+				case 0: drawShapeCircle(pixmap, _size, true); break;
+				case 1: drawShapeCircle(pixmap, _size, false); break;
+				case 2: drawShapeRectangle(pixmap, _size, true); break;
+				case 3: drawShapeRectangle(pixmap, _size, false); break;
+				case 4: drawShapeTriangle(pixmap, _size, true); break;
+				case 5: drawShapeTriangle(pixmap, _size, false); break;
+			}
+			shapesTextures[i] = new Texture(pixmap);
+			shapesTextures[i].setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+//			shapesTextures[i].setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.MipMap);
+			pixmap.dispose();
+		}
+
+	}
+
+	private void generateCards(){
     	float uiSize = screenHeight*UI_SCALE;
 		float sy = ((screenHeight-uiSize)*SPACING)/ gridHeight;
 		float sx = (screenWidth*SPACING)/ gridWidth;
@@ -144,22 +169,19 @@ public class GameScreen implements Screen {
 		int offsetX = (int)Math.floor( (screenWidth - (size* gridWidth +marginX*(gridWidth -1)))/2 );
 		int offsetY = (int)Math.floor( (screenHeight-uiSize - (size* gridHeight +marginY*(gridHeight -1)))/2 );
 
+		generateShapesTextures(size);
+
 		texture_off = getTexture(size);
 
 		Array<CardTemplate> templatesAll = new Array<>();
 
 		int template_id = 0;
 		for(int i = 0; i < CARD_COLORS.length; i++){
-			templatesAll.add(
-					new CardTemplate(SHAPE.CIRCLE, CARD_COLORS[i], true, template_id++),
-					new CardTemplate(SHAPE.TRIANGLE, CARD_COLORS[i], true, template_id++),
-					new CardTemplate(SHAPE.SQUARE, CARD_COLORS[i], true, template_id++)
-			);
-			templatesAll.add(
-					new CardTemplate(SHAPE.CIRCLE, CARD_COLORS[i], false, template_id++),
-					new CardTemplate(SHAPE.TRIANGLE, CARD_COLORS[i], false, template_id++),
-					new CardTemplate(SHAPE.SQUARE, CARD_COLORS[i], false, template_id++)
-			);
+			for(int j = 0; j < 6; j++){//shapes
+				templatesAll.add(
+						new CardTemplate(j, CARD_COLORS[i], template_id++)
+				);
+			}
 		}
 
 		Array<CardTemplate> templatesPairs = new Array<>();
@@ -172,15 +194,17 @@ public class GameScreen implements Screen {
 		for(int y = 0; y < gridHeight; y++)
 			for(int x = 0; x < gridWidth; x++){
 				CardTemplate template = templatesPairs.removeIndex(MathUtils.random(0,templatesPairs.size-1));
+//				CardTemplate template = new CardTemplate(SHAPE.CIRCLE, CARD_COLORS[i], false, template_id++);
 
-				Texture texture_on = getCardTexture(size, template);
+//				Texture texture_on = getCardTexture(size, template);
 
 				Card c = new Card(
 						offsetX + x*(size + marginX),
 						offsetY + y*(size + marginY),
 						x + y* gridWidth,
 						template.id,
-						texture_on,
+						template.color,
+						shapesTextures[template.shape],
 						texture_off
 				);
 				cards.add(c);
@@ -230,6 +254,8 @@ public class GameScreen implements Screen {
 		batch.setProjectionMatrix(camera.combined);
 
 		ScreenUtils.clear(0, 0, 0, 1);
+//		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT | (Gdx.graphics.getBufferFormat().coverageSampling?GL20.GL_COVERAGE_BUFFER_BIT_NV:0));
+
 		batch.begin();
 		for(Card c: cards)
 			c.draw(batch, _delta);
@@ -247,8 +273,8 @@ public class GameScreen implements Screen {
 			}
 			cards.removeValue(card1, true);
 			cards.removeValue(card2, true);
-			card1.dispose();
-			card2.dispose();
+//			card1.dispose();
+//			card2.dispose();
 			if(cards.size == 0){//END GAME
 				parent.showResults(gameObserver.getTime(), gameObserver.getMistakes());
 				return;
@@ -352,8 +378,10 @@ public class GameScreen implements Screen {
     public void dispose() {
         batch.dispose();
 		texture_off.dispose();
-		for(Card c: cards)
-			c.dispose();
+//		for(Card c: cards)
+//			c.dispose();
+		for(int i = 0; i < 6; i++)
+			shapesTextures[i].dispose();
 		font.dispose();
 		pauseTexture.dispose();
     }
@@ -361,95 +389,77 @@ public class GameScreen implements Screen {
     private Texture getTexture(int s){
 		Pixmap pixmap = new Pixmap(s, s, Pixmap.Format.RGBA8888);
 		pixmap.setColor(Color.WHITE);
-//		pixmap.fillRectangle(0,0,s,s);
 		myUtils.drawRoundedRectangle(pixmap, 0,0,s,s,s/10);
-//		pixmap.setColor(Color.BLACK);
-//		pixmap.fillRectangle(0,0,s,s);
-//		drawRoundedRectangle(pixmap, s/10,s/10,s - s/5,s - s/5,s/10, Color.BLACK);
 		Texture t = new Texture(pixmap);
+		t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 		pixmap.dispose();
 		return t;
 	}
 
-	private Texture getCardTexture(int s, CardTemplate _t){
-		Pixmap pixmap = new Pixmap(s, s, Pixmap.Format.RGBA8888);
-//		pixmap.setColor(0.2f,0.2f,0.2f,1);
-//		pixmap.setColor(Color.WHITE);
-//		pixmap.drawRectangle(0,0,s,s);
-//		pixmap.setColor(0.2f,0.2f,0.2f,1);
-//		pixmap.fillRectangle(0,0,s,s);
-		drawPuzzle(pixmap, s, _t.shape, _t.color, _t.filled);
-		Texture t = new Texture(pixmap);
-		pixmap.dispose();
-		return t;
+	private void drawShapeTriangle(Pixmap _pixmap, int _size, boolean _filled){
+		Vector2 v1 = new Vector2(0, -_size/2 + _size/ SHAPE_MARGIN_RATE);
+		Vector2 v2 = v1.cpy();
+		v2.rotateDeg(120);
+		Vector2 v3 = v2.cpy();
+		v3.rotateDeg(120);
+
+		v1.add(new Vector2(_size/2, _size/2));
+		v2.add(new Vector2(_size/2, _size/2));
+		v3.add(new Vector2(_size/2, _size/2));
+		_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
+
+		if(!_filled){
+			v1.sub(new Vector2(_size/2, _size/2));
+			v2.sub(new Vector2(_size/2, _size/2));
+			v3.sub(new Vector2(_size/2, _size/2));
+
+			Matrix3 m = new Matrix3();
+			m.idt();
+			m.scl((_size/2 - _size/ SHAPE_MARGIN_RATE - _size* SHAPE_STROKE_RATE)/(_size/2 + _size/ SHAPE_MARGIN_RATE));
+
+			v1.mul(m);
+			v2.mul(m);
+			v3.mul(m);
+
+			v1.add(new Vector2(_size/2, _size/2));
+			v2.add(new Vector2(_size/2, _size/2));
+			v3.add(new Vector2(_size/2, _size/2));
+			_pixmap.setColor(Color.BLACK);
+			_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
+		}
 	}
 
-	private void drawPuzzle(Pixmap _pixmap, int _size, SHAPE _shape, Color _color, boolean _filled){
-		_pixmap.setColor(_color);
-		final float marginRate = 8.8f;
-		final float strokeRate = 0.1f;
-		switch (_shape){
-			case TRIANGLE://TODO fix with vectors
-				Vector2 v1 = new Vector2(0, -_size/2 + _size/marginRate);
-				Vector2 v2 = v1.cpy();
-				v2.rotateDeg(120);
-				Vector2 v3 = v2.cpy();
-				v3.rotateDeg(120);
+	private void drawShapeCircle(Pixmap _pixmap, int _size, boolean _filled){
+		_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE));
 
-				v1.add(new Vector2(_size/2, _size/2));
-				v2.add(new Vector2(_size/2, _size/2));
-				v3.add(new Vector2(_size/2, _size/2));
-				_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
+//		_pixmap.setColor(new Color(0.5f, 0.5f, 0.5f, 1));
+//		_pixmap.drawCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE));
 
-				if(!_filled){
-					v1.sub(new Vector2(_size/2, _size/2));
-					v2.sub(new Vector2(_size/2, _size/2));
-					v3.sub(new Vector2(_size/2, _size/2));
+		if(!_filled){
+			_pixmap.setColor(Color.BLACK);
+			_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE - _size* SHAPE_STROKE_RATE));
 
-					Matrix3 m = new Matrix3();
-					m.idt();
-					m.scl((_size/2 - _size/marginRate - _size*strokeRate)/(_size/2 + _size/marginRate));
+//			_pixmap.setColor(new Color(0.5f, 0.5f, 0.5f, 1));
+//			_pixmap.drawCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE - _size* SHAPE_STROKE_RATE));
+		}
+	}
 
-					v1.mul(m);
-					v2.mul(m);
-					v3.mul(m);
-
-					v1.add(new Vector2(_size/2, _size/2));
-					v2.add(new Vector2(_size/2, _size/2));
-					v3.add(new Vector2(_size/2, _size/2));
-					_pixmap.setColor(Color.BLACK);
+	private void drawShapeRectangle(Pixmap _pixmap, int _size, boolean _filled){
+		_pixmap.fillRectangle(
+				Math.round(_size/ SHAPE_MARGIN_RATE),
+				Math.round(_size/ SHAPE_MARGIN_RATE),
+				Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE),
+				Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE)
+		);
+		if(!_filled){
+			_pixmap.setColor(Color.BLACK);
 //					_pixmap.setColor(0.2f,0.2f,0.2f,1);
-					_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
-				}
-
-				break;
-			case CIRCLE:
-				_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/marginRate));
-				if(!_filled){
-					_pixmap.setColor(Color.BLACK);
-//					_pixmap.setColor(0.2f,0.2f,0.2f,1);
-					_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/marginRate - _size*strokeRate));
-				}
-				break;
-
-			case SQUARE:
-				_pixmap.fillRectangle(
-						Math.round(_size/marginRate),
-						Math.round(_size/marginRate),
-						Math.round(_size - 2*_size/marginRate),
-						Math.round(_size - 2*_size/marginRate)
-				);
-				if(!_filled){
-					_pixmap.setColor(Color.BLACK);
-//					_pixmap.setColor(0.2f,0.2f,0.2f,1);
-					_pixmap.fillRectangle(
-							Math.round(_size/marginRate + _size*strokeRate),
-							Math.round(_size/marginRate + _size*strokeRate),
-							Math.round(_size - 2*_size/marginRate - 2*_size*strokeRate),
-							Math.round(_size - 2*_size/marginRate - 2*_size*strokeRate)
-					);
-				}
-				break;
+			_pixmap.fillRectangle(
+					Math.round(_size/ SHAPE_MARGIN_RATE + _size* SHAPE_STROKE_RATE),
+					Math.round(_size/ SHAPE_MARGIN_RATE + _size* SHAPE_STROKE_RATE),
+					Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE - 2*_size* SHAPE_STROKE_RATE),
+					Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE - 2*_size* SHAPE_STROKE_RATE)
+			);
 		}
 	}
 
