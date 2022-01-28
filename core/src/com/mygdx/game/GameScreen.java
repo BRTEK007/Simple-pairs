@@ -15,10 +15,14 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Button;
+import com.badlogic.gdx.scenes.scene2d.ui.HorizontalGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -33,8 +37,6 @@ public class GameScreen implements Screen {
     final float UI_SCALE = 0.066f;
 	final float SPACING = 0.88f;
 	final float UNCOVER_DELAY = 1f;
-	final float SHAPE_MARGIN_RATE = 8.8f;
-	final float SHAPE_STROKE_RATE = 0.1f;
 
 	SpriteBatch batch;
 	OrthographicCamera camera;
@@ -56,12 +58,15 @@ public class GameScreen implements Screen {
 	private int gridHeight;
 
 	private Stage stage;
-	private Table table;
-	private BitmapFont font;
-	private Texture pauseTexture;
+	private Table table, tablePopup;
+	private BitmapFont font, buttonFont;
+	private Texture pauseTexture, textureButton1,textureBlankWhite;
 	private Label labelState;
+	private PopupDrawable popupDrawable1;
 
-    public GameScreen(MyGdxGame _p, GAMEMODE _gamemode, GRIDSIZE _gridSize){
+	private boolean popupOpened;
+
+    public GameScreen(MyGdxGame _p, int _gamemode, int _gridSize){
         parent = _p;
 
 		batch = new SpriteBatch();
@@ -74,9 +79,10 @@ public class GameScreen implements Screen {
 		camera.setToOrtho(false, screenWidth, screenHeight);
 
 		switch (_gridSize){
-			case SMALL: gridHeight = 6; gridWidth = 3; break;
-			case MEDIUM: gridHeight = 7; gridWidth = 4; break;
-			case BIG: gridHeight = 8; gridWidth = 5; break;
+			case 0: gridHeight = 6; gridWidth = 3; break;
+			case 1: gridHeight = 7; gridWidth = 4; break;
+			case 2: gridHeight = 8; gridWidth = 5; break;
+			case 3: gridHeight = 9; gridWidth = 6; break;
 		}
 
 		cards = new Array<>();
@@ -88,20 +94,83 @@ public class GameScreen implements Screen {
 		canClick = true;
 		gameObserver = new GameObserver();
 		switch (_gamemode){
-			case SOLO: bot = null; break;
-			case BOT1: bot = new Bot(cards.size, 3); break;
-			case BOT2: bot = new Bot(cards.size, 5); break;
-			case BOT3: bot = new Bot(cards.size, cards.size); break;
+			case 0: bot = null; break;
+			case 1: bot = new Bot(cards.size, 3); break;
+			case 2: bot = new Bot(cards.size, 5); break;
+			case 3: bot = new Bot(cards.size, cards.size); break;
 		}
 		playerTurn = true;
 
 
 		stage = new Stage(new ScreenViewport());
 		Gdx.input.setInputProcessor(stage);
-		generateUI();
+
+		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
+		FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+
+		generateUI(generator, parameter);
+		initPopup(generator, parameter);
+
+		generator.dispose();
+		textureBlankWhite = myUtils.getBlankWhite();
     }
 
-    private void generateUI(){
+    private void initPopup(FreeTypeFontGenerator generator, FreeTypeFontGenerator.FreeTypeFontParameter parameter){
+		popupOpened = false;
+		popupDrawable1 = new PopupDrawable();
+
+		int buttonWidth = Math.round(0.84f*Gdx.graphics.getWidth() / 2);
+		int buttonHeight = Math.round(buttonWidth/1.68f);
+		int popupHeight = buttonHeight*2;
+
+		tablePopup = new Table();
+		tablePopup.setBackground(popupDrawable1);
+		tablePopup.setFillParent(false);
+		tablePopup.setSize(Gdx.graphics.getWidth(), popupHeight);
+		tablePopup.setY(Gdx.graphics.getHeight()/2 - popupHeight/2);
+		tablePopup.setVisible(false);
+
+		parameter.color = Color.BLACK;
+		parameter.size = Math.round(buttonHeight*0.42f); // font size
+		buttonFont = generator.generateFont(parameter);
+
+		textureButton1 = myUtils.getButtonTexture(buttonWidth, buttonHeight);
+		TextureRegion regionButton = new TextureRegion(textureButton1);
+		TextButton.TextButtonStyle styleButton = new TextButton.TextButtonStyle();
+		styleButton.font = buttonFont;
+		styleButton.up = new TextureRegionDrawable(regionButton);
+		styleButton.down = new TextureRegionDrawable(regionButton);
+
+
+		TextButton button1  = new TextButton("MENU", styleButton);
+		TextButton button2  = new TextButton("PLAY", styleButton);
+
+		HorizontalGroup group = new HorizontalGroup();
+		group.space((Gdx.graphics.getWidth()-buttonWidth*2)/3);
+		group.addActor(button1);
+		group.addActor(button2);
+
+		tablePopup.add(group);
+
+		stage.addActor(tablePopup);
+
+		button2.addListener(new ChangeListener() {
+			@Override
+			public void changed(ChangeEvent event, Actor actor) {
+//				if(popupOpened) return;
+				closePopup();
+			}
+		});
+
+		button1.addListener(new ChangeListener() {
+			@Override
+			public void changed(ChangeEvent event, Actor actor) {
+				parent.returnToMenu();
+			}
+		});
+	}
+
+    private void generateUI(FreeTypeFontGenerator generator, FreeTypeFontGenerator.FreeTypeFontParameter parameter){
 		table = new Table();
 		table.setFillParent(true);
 		stage.addActor(table);
@@ -109,12 +178,9 @@ public class GameScreen implements Screen {
 		final int widgetSize = Math.round(screenHeight*UI_SCALE*0.84f);
 		final int widgetMargin = Math.round((screenHeight*UI_SCALE - widgetSize)/2);
 
-		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
-		FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
 		parameter.size = Math.round(widgetSize*0.84f); // font size
 		parameter.color = Color.WHITE;
 		font = generator.generateFont(parameter);
-		generator.dispose();
 
 		Label.LabelStyle labelStateStyle = new Label.LabelStyle(font, Color.WHITE);
 		labelState = new Label("YOUR TURN", labelStateStyle);//YOUR TURN, BOT PLAYING
@@ -129,11 +195,31 @@ public class GameScreen implements Screen {
 
 		Button buttonPause = new Button(pauseButtonStyle);
 
+		buttonPause.addListener(new ChangeListener() {
+			@Override
+			public void changed(ChangeEvent event, Actor actor) {
+                if(popupOpened) return;
+				openPopup();
+			}
+		});
+
 		table.top();
 		table.left();
 		int padRight = Math.round(screenWidth - widgetSize - widgetMargin - widgetSize*6 - widgetMargin);
 		table.add(labelState).size(widgetSize*6, widgetSize).padLeft(widgetMargin).padTop(widgetMargin).padRight(padRight);
 		table.add(buttonPause).size(widgetSize, widgetSize).padTop(widgetMargin);
+	}
+
+	private void closePopup(){
+		popupOpened = false;
+		tablePopup.setVisible(false);
+		Timer.instance().start();
+	}
+
+	private void openPopup(){
+		popupOpened = true;
+		tablePopup.setVisible(true);
+		Timer.instance().stop();
 	}
 
 	private void generateShapesTextures(int _size) {
@@ -142,12 +228,12 @@ public class GameScreen implements Screen {
 			Pixmap pixmap = new Pixmap(_size, _size, Pixmap.Format.RGBA8888);
 			pixmap.setColor(Color.WHITE);
 			switch (i){
-				case 0: drawShapeCircle(pixmap, _size, true); break;
-				case 1: drawShapeCircle(pixmap, _size, false); break;
-				case 2: drawShapeRectangle(pixmap, _size, true); break;
-				case 3: drawShapeRectangle(pixmap, _size, false); break;
-				case 4: drawShapeTriangle(pixmap, _size, true); break;
-				case 5: drawShapeTriangle(pixmap, _size, false); break;
+				case 0: myUtils.drawShapeCircle(pixmap, _size, true); break;
+				case 1: myUtils.drawShapeCircle(pixmap, _size, false); break;
+				case 2: myUtils.drawShapeRectangle(pixmap, _size, true); break;
+				case 3: myUtils.drawShapeRectangle(pixmap, _size, false); break;
+				case 4: myUtils.drawShapeTriangle(pixmap, _size, true); break;
+				case 5: myUtils.drawShapeTriangle(pixmap, _size, false); break;
 			}
 			shapesTextures[i] = new Texture(pixmap);
 			shapesTextures[i].setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
@@ -211,7 +297,6 @@ public class GameScreen implements Screen {
 			}
 	}
 
-
     @Override
     public void show() {
 
@@ -222,7 +307,7 @@ public class GameScreen implements Screen {
 
     	gameObserver.update(_delta);
 
-        if(canClick && Gdx.input.justTouched()) {
+        if(canClick && !popupOpened && Gdx.input.justTouched()) {
 			Vector3 touchPoint = new Vector3();
 			camera.unproject(touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0));
 
@@ -263,6 +348,14 @@ public class GameScreen implements Screen {
 
 		stage.act(Math.min(_delta, 1 / 30f));
 		stage.draw();
+
+		if(popupOpened) {//popup opened
+			batch.begin();
+			batch.setColor(0, 0, 0, 0.66f);
+			batch.draw(textureBlankWhite, 0, 0, Gdx.graphics.getWidth(), tablePopup.getY());
+			batch.draw(textureBlankWhite, 0, tablePopup.getY()+tablePopup.getHeight(), Gdx.graphics.getWidth(), tablePopup.getY());
+			batch.end();
+		}
     }
 
     private void evaluateMove(){
@@ -352,8 +445,6 @@ public class GameScreen implements Screen {
     	return null;
 	}
 
-
-
     @Override
     public void resize(int width, int height) {
 
@@ -383,7 +474,11 @@ public class GameScreen implements Screen {
 		for(int i = 0; i < 6; i++)
 			shapesTextures[i].dispose();
 		font.dispose();
+		buttonFont.dispose();
 		pauseTexture.dispose();
+		textureBlankWhite.dispose();
+		textureButton1.dispose();
+		popupDrawable1.dispose();
     }
 
     private Texture getTexture(int s){
@@ -395,73 +490,5 @@ public class GameScreen implements Screen {
 		pixmap.dispose();
 		return t;
 	}
-
-	private void drawShapeTriangle(Pixmap _pixmap, int _size, boolean _filled){
-		Vector2 v1 = new Vector2(0, -_size/2 + _size/ SHAPE_MARGIN_RATE);
-		Vector2 v2 = v1.cpy();
-		v2.rotateDeg(120);
-		Vector2 v3 = v2.cpy();
-		v3.rotateDeg(120);
-
-		v1.add(new Vector2(_size/2, _size/2));
-		v2.add(new Vector2(_size/2, _size/2));
-		v3.add(new Vector2(_size/2, _size/2));
-		_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
-
-		if(!_filled){
-			v1.sub(new Vector2(_size/2, _size/2));
-			v2.sub(new Vector2(_size/2, _size/2));
-			v3.sub(new Vector2(_size/2, _size/2));
-
-			Matrix3 m = new Matrix3();
-			m.idt();
-			m.scl((_size/2 - _size/ SHAPE_MARGIN_RATE - _size* SHAPE_STROKE_RATE)/(_size/2 + _size/ SHAPE_MARGIN_RATE));
-
-			v1.mul(m);
-			v2.mul(m);
-			v3.mul(m);
-
-			v1.add(new Vector2(_size/2, _size/2));
-			v2.add(new Vector2(_size/2, _size/2));
-			v3.add(new Vector2(_size/2, _size/2));
-			_pixmap.setColor(Color.BLACK);
-			_pixmap.fillTriangle(Math.round(v1.x), Math.round(v1.y), Math.round(v2.x), Math.round(v2.y), Math.round(v3.x), Math.round(v3.y));
-		}
-	}
-
-	private void drawShapeCircle(Pixmap _pixmap, int _size, boolean _filled){
-		_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE));
-
-//		_pixmap.setColor(new Color(0.5f, 0.5f, 0.5f, 1));
-//		_pixmap.drawCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE));
-
-		if(!_filled){
-			_pixmap.setColor(Color.BLACK);
-			_pixmap.fillCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE - _size* SHAPE_STROKE_RATE));
-
-//			_pixmap.setColor(new Color(0.5f, 0.5f, 0.5f, 1));
-//			_pixmap.drawCircle(Math.round(_size/2), Math.round(_size/2), Math.round(_size/2 - _size/ SHAPE_MARGIN_RATE - _size* SHAPE_STROKE_RATE));
-		}
-	}
-
-	private void drawShapeRectangle(Pixmap _pixmap, int _size, boolean _filled){
-		_pixmap.fillRectangle(
-				Math.round(_size/ SHAPE_MARGIN_RATE),
-				Math.round(_size/ SHAPE_MARGIN_RATE),
-				Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE),
-				Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE)
-		);
-		if(!_filled){
-			_pixmap.setColor(Color.BLACK);
-//					_pixmap.setColor(0.2f,0.2f,0.2f,1);
-			_pixmap.fillRectangle(
-					Math.round(_size/ SHAPE_MARGIN_RATE + _size* SHAPE_STROKE_RATE),
-					Math.round(_size/ SHAPE_MARGIN_RATE + _size* SHAPE_STROKE_RATE),
-					Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE - 2*_size* SHAPE_STROKE_RATE),
-					Math.round(_size - 2*_size/ SHAPE_MARGIN_RATE - 2*_size* SHAPE_STROKE_RATE)
-			);
-		}
-	}
-
 
 }

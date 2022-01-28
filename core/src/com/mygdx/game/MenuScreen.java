@@ -23,42 +23,65 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 public class MenuScreen implements Screen {
 
+    final String CARDS_STRINGS[] = {"18", "28", "40", "54"};
+    final String GAMEMODES_STRINGS[] = {"SOLO", "BOT I", "BOT II", "BOT III"};
+
     private MyGdxGame parent;
+
+    private int gamemode;
+    private int gridsize;
 
     private Stage stage;
     private Table table, tablePopup;
-    private Texture textureButton1,textureButton2, lineTexture;
-    private BitmapFont fontButton1, fontButton2, fontLabel;
+    private Texture textureButton1,textureButton2, textureButton3, textureBlankWhite;
+    private BitmapFont fontButton1, fontButton2, fontButton3, fontLabel;
     private Label labelCards, labelGamemode;
     private PopupDrawable popupDrawable1;
-//    private RectDrawable drawableButton1;
+    private TextButton popupButtons[];
+    private TextButton buttonCards, buttonGamemode;
 
     private SpriteBatch batch;
 
-    boolean popupOpened;
+    private int popupMode;//-1 off, 0 - cards, 1 - gamemode
 
     public MenuScreen(MyGdxGame _p) {//TODO clickable buttons + styles
         parent = _p;
+
+        gamemode = 1;
+        gridsize = 1;
 
         stage = new Stage(new ScreenViewport());
         Gdx.input.setInputProcessor(stage);
 
         table = new Table();
         table.setFillParent(true);
-//        table.setSize(400,400);
         stage.addActor(table);
-
-        /////////////////////////////////////////////
-
-        int buttonWidth = Math.round(3*Gdx.graphics.getWidth()/10);
-        int buttonHeight = Math.round(buttonWidth/1.68f);
-        int buttonMargin = Math.round(buttonWidth*0.1f);
-        textureButton1 = getTextureButton(buttonWidth, buttonHeight);
-        TextureRegion choiceRegion = new TextureRegion(textureButton1);
-//        drawableButton1 = new RectDrawable(buttonWidth, buttonHeight, buttonWidth/10);
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+
+        batch = new SpriteBatch();
+
+        initFront(generator, parameter);
+        initPopup(generator, parameter);
+
+        generator.dispose();
+
+        textureBlankWhite = myUtils.getBlankWhite();
+    }
+
+    @Override
+    public void show() {
+
+    }
+
+    private void initFront(FreeTypeFontGenerator generator, FreeTypeFontGenerator.FreeTypeFontParameter parameter){
+        int buttonWidth = Math.round(3*Gdx.graphics.getWidth()/10);
+        int buttonHeight = Math.round(buttonWidth/1.68f);
+        int buttonMargin = Math.round(buttonWidth*0.1f);
+        textureButton1 = myUtils.getButtonTexture(buttonWidth, buttonHeight);
+        TextureRegion choiceRegion = new TextureRegion(textureButton1);
+
         parameter.size = Math.round(buttonHeight*0.42f); // font size
         parameter.color = Color.BLACK;
         fontButton1 = generator.generateFont(parameter);
@@ -67,17 +90,11 @@ public class MenuScreen implements Screen {
         choiceButtonStyle.up = new TextureRegionDrawable(choiceRegion);
         choiceButtonStyle.font = fontButton1;
 
-        String[] options1 = {"BOT II", "BOT III","SOLO", "BOT I",};
-        String[] options2 = {"7x4", "8x5", "6x3"};
-
-        Color[] colors1 = {Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE};
-        Color[] colors2 = {Color.WHITE, Color.WHITE, Color.WHITE};
-
-        final MyButton buttonMode = new MyButton(options1, colors1, choiceButtonStyle);
-        final MyButton buttonSize = new MyButton(options2, colors2, choiceButtonStyle);
+        buttonGamemode = new TextButton(GAMEMODES_STRINGS[1], choiceButtonStyle);
+        buttonCards = new TextButton(CARDS_STRINGS[1], choiceButtonStyle);
         /////////////////////////////////////////////
 
-        textureButton2 = getTextureButton(buttonWidth*2 + buttonMargin, Math.round((buttonWidth*2 + buttonMargin)/1.68f));
+        textureButton2 = myUtils.getButtonTexture(buttonWidth*2 + buttonMargin, Math.round((buttonWidth*2 + buttonMargin)/1.68f));
 
         parameter.size = Math.round(buttonHeight*0.84f); // font size
         fontButton2 = generator.generateFont(parameter);
@@ -90,16 +107,6 @@ public class MenuScreen implements Screen {
 
         TextButton buttonPlay = new TextButton("PLAY", playButtonStyle);
 
-        buttonPlay.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                GAMEMODE gamemodes[] = {GAMEMODE.BOT2, GAMEMODE.BOT3, GAMEMODE.SOLO, GAMEMODE.BOT1};
-                GRIDSIZE sizes[] = {GRIDSIZE.MEDIUM, GRIDSIZE.BIG, GRIDSIZE.SMALL};
-
-                parent.startGame(gamemodes[buttonMode.state], sizes[buttonSize.state]);
-            }
-        });
-
         parameter.size = Math.round(buttonHeight*0.26f);
         parameter.color = Color.WHITE;
         fontLabel = generator.generateFont(parameter);
@@ -111,12 +118,12 @@ public class MenuScreen implements Screen {
         VerticalGroup group1 = new VerticalGroup();
         group1.space(buttonMargin/2);
         group1.addActor(labelCards);
-        group1.addActor(buttonSize);
+        group1.addActor(buttonCards);
 
         VerticalGroup group2 = new VerticalGroup();
         group2.space(buttonMargin/2);
         group2.addActor(labelGamemode);
-        group2.addActor(buttonMode);
+        group2.addActor(buttonGamemode);
 
         HorizontalGroup group3 = new HorizontalGroup();
         group3.space(buttonMargin);
@@ -128,66 +135,138 @@ public class MenuScreen implements Screen {
         table.add(buttonPlay).padTop(buttonMargin);
         table.row();
 
-        ///////////////////////////////
+        buttonPlay.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if(popupMode != -1) return;
+                parent.startGame(gamemode, gridsize);
+            }
+        });
 
-        lineTexture = getLineTexture();
-        batch = new SpriteBatch();
+        buttonGamemode.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if(popupMode != -1) return;
+                openPopup(1);
+            }
+        });
 
-        popupOpened = false;
+        buttonCards.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if(popupMode != -1) return;
+                openPopup(0);
+            }
+        });
+    }
 
+    private void initPopup(FreeTypeFontGenerator generator, FreeTypeFontGenerator.FreeTypeFontParameter parameter){
+        popupMode = -1;
         popupDrawable1 = new PopupDrawable();
+
+        int buttonWidth = Math.round(0.84f*Gdx.graphics.getWidth() / 4);
+        int buttonHeight = Math.round(buttonWidth/1.68f);
+        int popupHeight = buttonHeight*2;
 
         tablePopup = new Table();
         tablePopup.setBackground(popupDrawable1);
         tablePopup.setFillParent(false);
-        tablePopup.setSize(Gdx.graphics.getWidth(),Gdx.graphics.getHeight()/4);
-        tablePopup.setY(Gdx.graphics.getHeight()/4);
-//        tablePopup.setVisible(false);
+        tablePopup.setSize(Gdx.graphics.getWidth(), popupHeight);
+        tablePopup.setY(Gdx.graphics.getHeight()/2 - popupHeight/2);
+        tablePopup.setVisible(false);
 
 
         parameter.size = Math.round(buttonHeight*0.42f); // font size
         parameter.color = Color.BLACK;
-        fontButton1 = generator.generateFont(parameter);
+        fontButton3 = generator.generateFont(parameter);
+
+        textureButton3 = myUtils.getButtonTexture(buttonWidth, buttonHeight);
+
+        parameter.size = Math.round(buttonHeight*0.84f); // font size
+        fontButton2 = generator.generateFont(parameter);
+
+        TextureRegion regionButton = new TextureRegion(textureButton3);
+        TextButton.TextButtonStyle styleButton = new TextButton.TextButtonStyle();
+        styleButton.font = fontButton3;
+        styleButton.up = new TextureRegionDrawable(regionButton);
+        styleButton.down = new TextureRegionDrawable(regionButton);
 
 
-        TextButton button1 = new TextButton("18", choiceButtonStyle);
-        TextButton button2 = new TextButton("28", choiceButtonStyle);
-        TextButton button3 = new TextButton("40", choiceButtonStyle);
-        TextButton button4 = new TextButton("54", choiceButtonStyle);
+        popupButtons = new TextButton[4];
+        popupButtons[0] = new TextButton("18", styleButton);
+        popupButtons[1] = new TextButton("28", styleButton);
+        popupButtons[2] = new TextButton("40", styleButton);
+        popupButtons[3] = new TextButton("54", styleButton);
 
-        tablePopup.add(button1);
-        tablePopup.add(button2);
-        tablePopup.add(button3);
-        tablePopup.add(button4);
+        HorizontalGroup group = new HorizontalGroup();
+        group.space((Gdx.graphics.getWidth()-buttonWidth*4)/5);
+        group.addActor(popupButtons[0]);
+        group.addActor(popupButtons[1]);
+        group.addActor(popupButtons[2]);
+        group.addActor(popupButtons[3]);
+
+        tablePopup.add(group);
 
         stage.addActor(tablePopup);
 
-        generator.dispose();
+        popupButtons[0].addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+//                if(popupMode != -1) return;
+                closePopup(0);
+            }
+        });
+
+        popupButtons[1].addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+//                if(!popupOpened) return;
+                closePopup(1);
+            }
+        });
+
+        popupButtons[2].addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+//                if(!popupOpened) return;
+                closePopup(2);
+            }
+        });
+
+        popupButtons[3].addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+//                if(!popupOpened) return;
+                closePopup(3);
+            }
+        });
+
     }
 
-    @Override
-    public void show() {
+    private void openPopup(int mode){
+        popupMode = mode;
+        tablePopup.setVisible(true);
+        if(popupMode == 0){
+            for(int i = 0; i < CARDS_STRINGS.length; i++)
+                popupButtons[i].setText(CARDS_STRINGS[i]);
+        }else{
+            for(int i = 0; i < GAMEMODES_STRINGS.length; i++)
+                popupButtons[i].setText(GAMEMODES_STRINGS[i]);
+        }
 
+//        popupOpened = true;
     }
 
-    private Texture getLineTexture(){
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        Texture t = new Texture(pixmap);
-        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        pixmap.dispose();
-        return t;
-    }
-
-    private Texture getTextureButton(int _sx, int _sy){
-        Pixmap pixmap = new Pixmap(_sx, _sy, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-        myUtils.drawRoundedRectangle(pixmap, 0,0,_sx,_sy,_sx/10);
-        Texture t = new Texture(pixmap);
-        t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        pixmap.dispose();
-        return t;
+    private void closePopup(int choice){
+        tablePopup.setVisible(false);
+        if(popupMode == 0){//cards
+            gridsize = choice;
+            buttonCards.setText(CARDS_STRINGS[choice]);
+        }else{//gamemode
+            gamemode = choice;
+            buttonGamemode.setText(GAMEMODES_STRINGS[choice]);
+        }
+        popupMode = -1;
     }
 
     @Override
@@ -195,12 +274,19 @@ public class MenuScreen implements Screen {
         ScreenUtils.clear(0, 0, 0, 1);
 
 //        batch.begin();
-//        batch.draw(lineTexture, menuOffset, 0, 1, Gdx.graphics.getHeight());
-//        batch.draw(lineTexture, Gdx.graphics.getWidth() - menuOffset, 0, 1, Gdx.graphics.getHeight());
+//        batch.draw(textureBlankWhite, 0, 0, Gdx.graphics.getWidth()/2, Gdx.graphics.getHeight());
 //        batch.end();
 
         stage.act(Math.min(_delta, 1 / 30f));
         stage.draw();
+
+        if(popupMode != -1) {//popup opened
+            batch.begin();
+            batch.setColor(0, 0, 0, 0.66f);
+            batch.draw(textureBlankWhite, 0, 0, Gdx.graphics.getWidth(), tablePopup.getY());
+            batch.draw(textureBlankWhite, 0, tablePopup.getY()+tablePopup.getHeight(), Gdx.graphics.getWidth(), tablePopup.getY());
+            batch.end();
+        }
     }
 
     @Override
@@ -225,13 +311,14 @@ public class MenuScreen implements Screen {
 
     @Override
     public void dispose() {
-        lineTexture.dispose();
         textureButton2.dispose();
         textureButton1.dispose();
-//        drawableButton1.dispose();
+        textureButton3.dispose();
+        textureBlankWhite.dispose();
         popupDrawable1.dispose();
         fontButton1.dispose();
         fontButton2.dispose();
+        fontButton3.dispose();
         fontLabel.dispose();
         stage.dispose();
     }

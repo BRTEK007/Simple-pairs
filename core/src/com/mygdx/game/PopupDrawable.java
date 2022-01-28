@@ -12,11 +12,7 @@ public class PopupDrawable extends BaseDrawable {
     private Texture blankWhite;
 
     public PopupDrawable() {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        blankWhite = new Texture(pixmap);
-        pixmap.dispose();
+        blankWhite = myUtils.getBlankWhite();
     }
 
     @Override

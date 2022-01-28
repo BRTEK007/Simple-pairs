@@ -43,7 +43,7 @@ public class MyGdxGame extends Game {
 	}
 
 
-	public void startGame(GAMEMODE _gamemode, GRIDSIZE _gridSize){//parameters size, etc...
+	public void startGame(int _gamemode, int _gridSize){//parameters size, etc...
 		getScreen().dispose();
 		gameScreen = new GameScreen(this, _gamemode, _gridSize);
 		setScreen(gameScreen);
