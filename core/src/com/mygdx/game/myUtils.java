@@ -11,6 +11,18 @@ public class myUtils {
     public static final float SHAPE_MARGIN_RATE = 8.8f;
     public static final float SHAPE_STROKE_RATE = 0.1f;
 
+    public static Texture blankWhite;
+
+
+    public static void init(){
+        blankWhite = getBlankWhite();
+    }
+
+    public static void dispose(){
+        blankWhite.dispose();
+    }
+
+
     public static void drawRoundedRectangle(Pixmap pixmap, int x, int y, int width, int height, int radius) {
         pixmap.fillRectangle(x, y + radius, width, height-2*radius);
         pixmap.fillRectangle(x + radius, y, width - 2*radius, height);
@@ -20,7 +32,7 @@ public class myUtils {
         pixmap.fillCircle(x+width-radius, y+height-radius, radius);
     }
 
-    public static Texture getBlankWhite(){
+    private static Texture getBlankWhite(){
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
@@ -28,6 +40,30 @@ public class myUtils {
         pixmap.dispose();
         return t;
     }
+
+
+    public static Texture[] getShapesTextures(int _size){
+        Texture t[] = new Texture[6];
+
+        for(int i = 0; i < 6; i++){
+            Pixmap pixmap = new Pixmap(_size, _size, Pixmap.Format.RGBA8888);
+            pixmap.setColor(Color.WHITE);
+            switch (i){
+                case 0: myUtils.drawShapeCircle(pixmap, _size, true); break;
+                case 1: myUtils.drawShapeCircle(pixmap, _size, false); break;
+                case 2: myUtils.drawShapeRectangle(pixmap, _size, true); break;
+                case 3: myUtils.drawShapeRectangle(pixmap, _size, false); break;
+                case 4: myUtils.drawShapeTriangle(pixmap, _size, true); break;
+                case 5: myUtils.drawShapeTriangle(pixmap, _size, false); break;
+            }
+            t[i] = new Texture(pixmap);
+//			shapesTextures[i].setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.MipMap);
+            pixmap.dispose();
+        }
+
+        return t;
+    }
+
 
     public static Texture getButtonTexture(int _sx, int _sy){
         Pixmap pixmap = new Pixmap(_sx, _sy, Pixmap.Format.RGBA8888);

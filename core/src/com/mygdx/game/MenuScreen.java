@@ -9,6 +9,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.HorizontalGroup;
@@ -21,10 +23,29 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
+class FallingPiece {
+
+    public Vector2 pos;
+    public Color color;
+    public Texture texture;
+    public float vel;
+
+    public FallingPiece(int _x, int _y, Texture t, Color c){
+        pos = new Vector2(_x, _y);
+        color = c;
+        texture = t;
+        vel = 0;
+    }
+
+}
+
 public class MenuScreen implements Screen {
 
     final String CARDS_STRINGS[] = {"18", "28", "40", "54"};
     final String GAMEMODES_STRINGS[] = {"SOLO", "BOT I", "BOT II", "BOT III"};
+    final int PIECE_COUNT = 10;
+    final float PIECE_SCALE = 0.1f, FALL_SPEED = 0.42f, PIECE_VARIATION = 0.25f;
+    final Color COLORS[] = {Color.RED, Color.MAGENTA, Color.GREEN, Color.YELLOW, Color.BLUE, Color.CYAN};
 
     private MyGdxGame parent;
 
@@ -33,16 +54,20 @@ public class MenuScreen implements Screen {
 
     private Stage stage;
     private Table table, tablePopup;
-    private Texture textureButton1,textureButton2, textureButton3, textureBlankWhite;
+    private Texture textureButton1,textureButton2, textureButton3;
     private BitmapFont fontButton1, fontButton2, fontButton3, fontLabel;
     private Label labelCards, labelGamemode;
     private PopupDrawable popupDrawable1;
     private TextButton popupButtons[];
     private TextButton buttonCards, buttonGamemode;
 
+    private Texture[] shapesTextures;
+    private FallingPiece[] fallingPieces;
+    private int pieceSize;
     private SpriteBatch batch;
 
     private int popupMode;//-1 off, 0 - cards, 1 - gamemode
+
 
     public MenuScreen(MyGdxGame _p) {//TODO clickable buttons + styles
         parent = _p;
@@ -60,14 +85,23 @@ public class MenuScreen implements Screen {
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
 
-        batch = new SpriteBatch();
-
         initFront(generator, parameter);
         initPopup(generator, parameter);
 
         generator.dispose();
 
-        textureBlankWhite = myUtils.getBlankWhite();
+        batch = new SpriteBatch();
+        pieceSize = Math.round(PIECE_SCALE*Gdx.graphics.getHeight());
+        shapesTextures = myUtils.getShapesTextures(pieceSize);
+        fallingPieces = new FallingPiece[PIECE_COUNT];
+        for(int i = 0; i < PIECE_COUNT; i++){
+            fallingPieces[i] = new FallingPiece(
+                    MathUtils.random(0, Gdx.graphics.getWidth()-pieceSize),
+                    MathUtils.random(0, Gdx.graphics.getHeight()*2),
+                    shapesTextures[MathUtils.random(0,5)],
+                    COLORS[MathUtils.random(0,5)]
+            );
+        }
     }
 
     @Override
@@ -273,9 +307,25 @@ public class MenuScreen implements Screen {
     public void render(float _delta) {
         ScreenUtils.clear(0, 0, 0, 1);
 
-//        batch.begin();
-//        batch.draw(textureBlankWhite, 0, 0, Gdx.graphics.getWidth()/2, Gdx.graphics.getHeight());
-//        batch.end();
+        batch.begin();
+        for(int i = 0; i < PIECE_COUNT; i++){
+            FallingPiece p = fallingPieces[i];
+            p.vel -= Gdx.graphics.getHeight() * FALL_SPEED * _delta;
+            p.pos.y += p.vel * _delta;
+
+            if(p.pos.y < -pieceSize){
+                fallingPieces[i] = new FallingPiece(
+                        MathUtils.random(0, Gdx.graphics.getWidth()-pieceSize),
+                        MathUtils.random(Gdx.graphics.getHeight(), Gdx.graphics.getHeight()*2),
+                        shapesTextures[MathUtils.random(0,5)],
+                        COLORS[MathUtils.random(0,5)]
+                );
+            }
+
+            batch.setColor(p.color);
+            batch.draw(p.texture, p.pos.x, p.pos.y);
+        }
+        batch.end();
 
         stage.act(Math.min(_delta, 1 / 30f));
         stage.draw();
@@ -283,8 +333,8 @@ public class MenuScreen implements Screen {
         if(popupMode != -1) {//popup opened
             batch.begin();
             batch.setColor(0, 0, 0, 0.66f);
-            batch.draw(textureBlankWhite, 0, 0, Gdx.graphics.getWidth(), tablePopup.getY());
-            batch.draw(textureBlankWhite, 0, tablePopup.getY()+tablePopup.getHeight(), Gdx.graphics.getWidth(), tablePopup.getY());
+            batch.draw(myUtils.blankWhite, 0, 0, Gdx.graphics.getWidth(), tablePopup.getY());
+            batch.draw(myUtils.blankWhite, 0, tablePopup.getY()+tablePopup.getHeight(), Gdx.graphics.getWidth(), tablePopup.getY());
             batch.end();
         }
     }
@@ -314,12 +364,14 @@ public class MenuScreen implements Screen {
         textureButton2.dispose();
         textureButton1.dispose();
         textureButton3.dispose();
-        textureBlankWhite.dispose();
+//        textureBlankWhite.dispose();
         popupDrawable1.dispose();
         fontButton1.dispose();
         fontButton2.dispose();
         fontButton3.dispose();
         fontLabel.dispose();
         stage.dispose();
+        for(int i = 0; i < 6; i++)
+            shapesTextures[i].dispose();
     }
 }

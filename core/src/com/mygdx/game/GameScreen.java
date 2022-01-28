@@ -60,7 +60,7 @@ public class GameScreen implements Screen {
 	private Stage stage;
 	private Table table, tablePopup;
 	private BitmapFont font, buttonFont;
-	private Texture pauseTexture, textureButton1,textureBlankWhite;
+	private Texture pauseTexture, textureButton1;
 	private Label labelState;
 	private PopupDrawable popupDrawable1;
 
@@ -86,7 +86,7 @@ public class GameScreen implements Screen {
 		}
 
 		cards = new Array<>();
-		shapesTextures = new Texture[6];
+//		shapesTextures = new Texture[6];
 		generateCards();
 
 		card1 = null;
@@ -112,7 +112,7 @@ public class GameScreen implements Screen {
 		initPopup(generator, parameter);
 
 		generator.dispose();
-		textureBlankWhite = myUtils.getBlankWhite();
+//		textureBlankWhite = myUtils.getBlankWhite();
     }
 
     private void initPopup(FreeTypeFontGenerator generator, FreeTypeFontGenerator.FreeTypeFontParameter parameter){
@@ -222,27 +222,6 @@ public class GameScreen implements Screen {
 		Timer.instance().stop();
 	}
 
-	private void generateShapesTextures(int _size) {
-
-    	for(int i = 0; i < 6; i++){
-			Pixmap pixmap = new Pixmap(_size, _size, Pixmap.Format.RGBA8888);
-			pixmap.setColor(Color.WHITE);
-			switch (i){
-				case 0: myUtils.drawShapeCircle(pixmap, _size, true); break;
-				case 1: myUtils.drawShapeCircle(pixmap, _size, false); break;
-				case 2: myUtils.drawShapeRectangle(pixmap, _size, true); break;
-				case 3: myUtils.drawShapeRectangle(pixmap, _size, false); break;
-				case 4: myUtils.drawShapeTriangle(pixmap, _size, true); break;
-				case 5: myUtils.drawShapeTriangle(pixmap, _size, false); break;
-			}
-			shapesTextures[i] = new Texture(pixmap);
-			shapesTextures[i].setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-//			shapesTextures[i].setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.MipMap);
-			pixmap.dispose();
-		}
-
-	}
-
 	private void generateCards(){
     	float uiSize = screenHeight*UI_SCALE;
 		float sy = ((screenHeight-uiSize)*SPACING)/ gridHeight;
@@ -255,7 +234,8 @@ public class GameScreen implements Screen {
 		int offsetX = (int)Math.floor( (screenWidth - (size* gridWidth +marginX*(gridWidth -1)))/2 );
 		int offsetY = (int)Math.floor( (screenHeight-uiSize - (size* gridHeight +marginY*(gridHeight -1)))/2 );
 
-		generateShapesTextures(size);
+//		generateShapesTextures(size);
+		shapesTextures = myUtils.getShapesTextures(size);
 
 		texture_off = getTexture(size);
 
@@ -352,8 +332,8 @@ public class GameScreen implements Screen {
 		if(popupOpened) {//popup opened
 			batch.begin();
 			batch.setColor(0, 0, 0, 0.66f);
-			batch.draw(textureBlankWhite, 0, 0, Gdx.graphics.getWidth(), tablePopup.getY());
-			batch.draw(textureBlankWhite, 0, tablePopup.getY()+tablePopup.getHeight(), Gdx.graphics.getWidth(), tablePopup.getY());
+			batch.draw(myUtils.blankWhite, 0, 0, Gdx.graphics.getWidth(), tablePopup.getY());
+			batch.draw(myUtils.blankWhite, 0, tablePopup.getY()+tablePopup.getHeight(), Gdx.graphics.getWidth(), tablePopup.getY());
 			batch.end();
 		}
     }
@@ -476,7 +456,7 @@ public class GameScreen implements Screen {
 		font.dispose();
 		buttonFont.dispose();
 		pauseTexture.dispose();
-		textureBlankWhite.dispose();
+//		textureBlankWhite.dispose();
 		textureButton1.dispose();
 		popupDrawable1.dispose();
     }

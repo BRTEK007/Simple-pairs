@@ -30,6 +30,7 @@ public class MyGdxGame extends Game {
 	public void create () {
 		menuScreen = new MenuScreen(this);
 		setScreen(menuScreen);
+		myUtils.init();
 	}
 
 	@Override
@@ -39,6 +40,7 @@ public class MyGdxGame extends Game {
 	
 	@Override
 	public void dispose () {
+		myUtils.dispose();
 		getScreen().dispose();
 	}
 

@@ -9,25 +9,25 @@ import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable;
 public class PopupDrawable extends BaseDrawable {
 
     private Color savedBatchColor = new Color();
-    private Texture blankWhite;
+//    private Texture blankWhite;
 
     public PopupDrawable() {
-        blankWhite = myUtils.getBlankWhite();
+//        blankWhite = myUtils.getBlankWhite();
     }
 
     @Override
     public void draw(Batch batch, float x, float y, float width, float height) {
         savedBatchColor.set(batch.getColor());
         batch.setColor(Color.BLACK);
-        batch.draw(blankWhite, x, y, width, height);
+        batch.draw(myUtils.blankWhite, x, y, width, height);
         batch.setColor(Color.WHITE);
-        batch.draw(blankWhite, x, y, width, 1);
-        batch.draw(blankWhite, x, y + height-1, width, 1);
+        batch.draw(myUtils.blankWhite, x, y, width, 1);
+        batch.draw(myUtils.blankWhite, x, y + height-1, width, 1);
         batch.setColor(savedBatchColor);
     }
 
     public void dispose(){
-        blankWhite.dispose();
+//        blankWhite.dispose();
     }
 
 }
