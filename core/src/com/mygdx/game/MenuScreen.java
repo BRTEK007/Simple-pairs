@@ -3,9 +3,11 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -25,16 +27,17 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 class FallingPiece {
 
-    public Vector2 pos;
-    public Color color;
-    public Texture texture;
+    public Sprite sprite;
     public float vel;
+    public float angularVel;
 
     public FallingPiece(int _x, int _y, Texture t, Color c){
-        pos = new Vector2(_x, _y);
-        color = c;
-        texture = t;
+        sprite = new Sprite(t);
+        sprite.setColor(c);
+        sprite.setPosition(_x, _y);
+        sprite.setScale(MathUtils.random(0.5f, 1.5f));
         vel = 0;
+        angularVel = 0;
     }
 
 }
@@ -43,7 +46,7 @@ public class MenuScreen implements Screen {
 
     final String CARDS_STRINGS[] = {"18", "28", "40", "54"};
     final String GAMEMODES_STRINGS[] = {"SOLO", "BOT I", "BOT II", "BOT III"};
-    final int PIECE_COUNT = 10;
+    final int PIECE_COUNT = 20;
     final float PIECE_SCALE = 0.1f, FALL_SPEED = 0.42f, PIECE_VARIATION = 0.25f;
     final Color COLORS[] = {Color.RED, Color.MAGENTA, Color.GREEN, Color.YELLOW, Color.BLUE, Color.CYAN};
 
@@ -63,7 +66,9 @@ public class MenuScreen implements Screen {
 
     private Texture[] shapesTextures;
     private FallingPiece[] fallingPieces;
+//    private Sprite fallingPieces[];
     private int pieceSize;
+    private OrthographicCamera camera;
     private SpriteBatch batch;
 
     private int popupMode;//-1 off, 0 - cards, 1 - gamemode
@@ -82,7 +87,7 @@ public class MenuScreen implements Screen {
         table.setFillParent(true);
         stage.addActor(table);
 
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Medium.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
 
         initFront(generator, parameter);
@@ -91,9 +96,12 @@ public class MenuScreen implements Screen {
         generator.dispose();
 
         batch = new SpriteBatch();
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         pieceSize = Math.round(PIECE_SCALE*Gdx.graphics.getHeight());
         shapesTextures = myUtils.getShapesTextures(pieceSize);
         fallingPieces = new FallingPiece[PIECE_COUNT];
+//        fallingPieces = new Sprite[PIECE_COUNT];
         for(int i = 0; i < PIECE_COUNT; i++){
             fallingPieces[i] = new FallingPiece(
                     MathUtils.random(0, Gdx.graphics.getWidth()-pieceSize),
@@ -101,6 +109,11 @@ public class MenuScreen implements Screen {
                     shapesTextures[MathUtils.random(0,5)],
                     COLORS[MathUtils.random(0,5)]
             );
+            fallingPieces[i].angularVel = MathUtils.random((float)Math.PI*6, (float)Math.PI*12);
+            fallingPieces[i].angularVel *= (Math.random() > 0.5f) ? 1 : -1;
+//            fallingPieces[i] = new Sprite(shapesTextures[MathUtils.random(0,5)]);
+//            fallingPieces[i].setPosition(MathUtils.random(0, Gdx.graphics.getWidth()-pieceSize), MathUtils.random(0, Gdx.graphics.getHeight()*2));
+//            fallingPieces[i].setColor(COLORS[MathUtils.random(0,5)]);
         }
     }
 
@@ -307,23 +320,31 @@ public class MenuScreen implements Screen {
     public void render(float _delta) {
         ScreenUtils.clear(0, 0, 0, 1);
 
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
+
         batch.begin();
         for(int i = 0; i < PIECE_COUNT; i++){
             FallingPiece p = fallingPieces[i];
             p.vel -= Gdx.graphics.getHeight() * FALL_SPEED * _delta;
-            p.pos.y += p.vel * _delta;
+            p.sprite.setY(p.sprite.getY() + p.vel * _delta);
+//            p.sprite.setPosition(); += p.vel * _delta;
 
-            if(p.pos.y < -pieceSize){
+            if(p.sprite.getY() < -pieceSize){
                 fallingPieces[i] = new FallingPiece(
                         MathUtils.random(0, Gdx.graphics.getWidth()-pieceSize),
                         MathUtils.random(Gdx.graphics.getHeight(), Gdx.graphics.getHeight()*2),
                         shapesTextures[MathUtils.random(0,5)],
                         COLORS[MathUtils.random(0,5)]
                 );
+                fallingPieces[i].angularVel = (float) (Math.random() * Math.PI * 8 + Math.PI*6);
+                fallingPieces[i].angularVel *= (Math.random() > 0.5f) ? 1 : -1;
             }
+            p.sprite.rotate(p.angularVel*_delta);
+            p.sprite.draw(batch);
 
-            batch.setColor(p.color);
-            batch.draw(p.texture, p.pos.x, p.pos.y);
+//            batch.setColor(p.color);
+//            batch.draw(p.texture, p.pos.x, p.pos.y);
         }
         batch.end();
 
@@ -364,7 +385,6 @@ public class MenuScreen implements Screen {
         textureButton2.dispose();
         textureButton1.dispose();
         textureButton3.dispose();
-//        textureBlankWhite.dispose();
         popupDrawable1.dispose();
         fontButton1.dispose();
         fontButton2.dispose();
