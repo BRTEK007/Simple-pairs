@@ -54,7 +54,7 @@ public class ResultsScreen implements Screen {
 
         TextureRegion region = new TextureRegion(texture1);
 
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Regular.ttf"));
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Raleway-Medium.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = Math.round(sizeY*0.66f); // font size
         parameter.color = Color.BLACK;
@@ -81,7 +81,7 @@ public class ResultsScreen implements Screen {
         buttonFont = generator.generateFont(parameter);
 
         Label.LabelStyle labelStyle = new Label.LabelStyle(buttonFont, Color.WHITE);
-        Label label = new Label("time: " + _time + '\n' + "mistakes: " + _mistakes, labelStyle);
+        Label label = new Label("time: " + _time + "s", labelStyle);
 
         table.bottom();
         table.add(label).pad(padding);

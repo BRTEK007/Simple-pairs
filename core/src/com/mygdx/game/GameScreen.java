@@ -80,7 +80,7 @@ public class GameScreen implements Screen {
 
 		switch (_gridSize){
 			case 0: gridHeight = 6; gridWidth = 3; break;
-			case 1: gridHeight = 7; gridWidth = 4; break;
+			case 1: gridHeight = 7; gridWidth = 4; break;//7 4
 			case 2: gridHeight = 8; gridWidth = 5; break;
 			case 3: gridHeight = 9; gridWidth = 6; break;
 		}
@@ -351,7 +351,10 @@ public class GameScreen implements Screen {
 //			card1.dispose();
 //			card2.dispose();
 			if(cards.size == 0){//END GAME
+//				System.out.println("<adad>");
 				parent.showResults(gameObserver.getTime(), gameObserver.getMistakes());
+//				Timer.instance().clear();
+//				parent.showResults(1,1);
 				return;
 			}
 			if(playerTurn){
